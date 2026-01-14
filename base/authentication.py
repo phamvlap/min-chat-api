@@ -15,25 +15,32 @@ class ClerkAuthentication(BaseAuthentication):
         # Extract the Clerk token from the Authorization header
         auth_header: str | None = request.headers.get("Authorization", None)
 
+        # No token provided or invalid format
         if not auth_header or not auth_header.startswith("Bearer "):
             return None  # No authentication provided
 
+        # Extract the token
         token: str = auth_header.split(" ")[1]
 
+        # Verify the token and retrieve user data
         user_data: dict | None = self._verify_clerk_token(token)
 
         if not user_data:
             raise AuthenticationFailed("Invalid Clerk token.")
 
-        user_id: str | None = user_data.get("user_id")
+        # Get user ID from the token claims
+        user_id: str | None = user_data.get("sub")
         if not user_id:
             raise AuthenticationFailed("Invalid Clerk token: missing user ID.")
 
+        # Retrieve the user by user ID from the Clerk
         clerk_service = ClerkService()
+
         clerk_user: dict | None = clerk_service.retrieve_user(user_id)
         if not clerk_user:
             raise AuthenticationFailed("Clerk user not found.")
 
+        # Prepare user data
         username: str = clerk_user["username"] if clerk_user.get("username") else f"user_{user_id}"
         first_name: str = clerk_user["first_name"] if clerk_user.get("first_name") else ""
         last_name: str = clerk_user["last_name"] if clerk_user.get("last_name") else ""
@@ -44,6 +51,7 @@ class ClerkAuthentication(BaseAuthentication):
         )
         unsafe_metadata: dict = clerk_user.get("unsafe_metadata", {})
 
+        # Get or create the user in the database
         user, created = User.objects.get_or_create(
             clerk_user_id=user_id,
             deleted_at=None,
@@ -63,10 +71,21 @@ class ClerkAuthentication(BaseAuthentication):
 
     def _verify_clerk_token(self, token: str) -> dict | None:
         try:
+            # Create a JWKS client from the Clerk JWKS URL
             jwks_client = jwt.PyJWKClient(settings.CLERK_JWKS_URL)
-            unverified_header = jwt.get_unverified_header(token)
-            signing_key = jwks_client.get_signing_key(unverified_header["kid"]).key
-            claims = jwt.decode(token, signing_key, [unverified_header["alg"]])
+
+            # Get the signing key for the token
+            unverified_header: dict = jwt.get_unverified_header(token)
+            signing_key: str = jwks_client.get_signing_key_from_jwt(token).key
+
+            # Decode and verify the token
+            claims = jwt.decode(
+                token,
+                signing_key,
+                algorithms=[unverified_header["alg"]],
+                issuer=settings.CLERK_ISSUER,
+            )
+
             return claims
         except Exception:
             return None

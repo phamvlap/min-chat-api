@@ -16,3 +16,6 @@ class UserRetrieveAPIView(BaseRetrieveAPIView):
     permission_classes = (IsAuthenticated,)
     model = User
     serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user
