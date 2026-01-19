@@ -22,4 +22,5 @@ from base.views import HealthCheckAPIView
 urlpatterns = [
     path("", HealthCheckAPIView.as_view(), name="health-check-api"),
     path("api/general/authentication/", include("modules.user.authentication.urls")),
+    path("api/testing/", include("modules.testing.urls")),
 ]
