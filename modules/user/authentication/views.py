@@ -1,5 +1,4 @@
-from rest_framework.permissions import IsAuthenticated
-
+from base.permission import IsAuthenticated
 from base.views import BaseCreateAPIView, BaseRetrieveAPIView
 from modules.user.models import User
 

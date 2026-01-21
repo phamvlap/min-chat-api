@@ -37,6 +37,9 @@ class ClerkService:
                 "Authorization": f"Bearer {self.secret_key}",
                 "Content-Type": "application/json",
             },
+            json={
+                "expires_in_seconds": 30 * 24 * 60 * 60,  # 30 days
+            },
         )
         if response.status_code in [200, 201]:
             return response.json()
