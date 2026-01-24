@@ -9,6 +9,7 @@ class FriendRequest(BaseModel):
         PENDING = "pending", _("Pending")
         ACCEPTED = "accepted", _("Accepted")
         REJECTED = "rejected", _("Rejected")
+        CANCELED = "canceled", _("Canceled")
 
     sender = models.ForeignKey(
         "user.User",
@@ -32,4 +33,8 @@ class FriendRequest(BaseModel):
 
     @classmethod
     def excluded_discovery_statuses(cls) -> list[Status]:
+        return [cls.Status.PENDING, cls.Status.ACCEPTED]
+
+    @classmethod
+    def exclude_statuses_on_creation(cls) -> list[Status]:
         return [cls.Status.PENDING, cls.Status.ACCEPTED]

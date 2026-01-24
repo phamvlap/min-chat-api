@@ -15,6 +15,7 @@ from rest_framework.generics import (
 from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
 
+from base.constants import ViewAction
 from base.pagination import ItemIndexPagination
 
 
@@ -34,6 +35,7 @@ class HealthCheckAPIView(RetrieveAPIView):
 
 class BaseListAPIView(ListModelMixin, GenericAPIView):
     model: type[models.Model]
+    action: str
     filter_backends = [
         DjangoFilterBackend,
         OrderingFilter,
@@ -43,6 +45,7 @@ class BaseListAPIView(ListModelMixin, GenericAPIView):
     ordering_fields: List[str] | str = "__all__"
 
     def get(self, request, *args, **kwargs):
+        self.action = ViewAction.LIST
         return self.list(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -56,9 +59,11 @@ class BaseListAPIView(ListModelMixin, GenericAPIView):
 
 class BaseCreateAPIView(CreateAPIView):
     model: type[models.Model]
+    action: str
 
     def post(self, request, *args, **kwargs):
         try:
+            self.action = ViewAction.CREATE
             return self.create(request, *args, **kwargs)
         except IntegrityError as exc:
             raise APIException(detail=exc)
@@ -69,8 +74,10 @@ class BaseCreateAPIView(CreateAPIView):
 
 class BaseRetrieveAPIView(RetrieveAPIView):
     model: type[models.Model]
+    action: str
 
     def get(self, request, *args, **kwargs):
+        self.action = ViewAction.RETRIEVE
         return self.retrieve(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -79,9 +86,11 @@ class BaseRetrieveAPIView(RetrieveAPIView):
 
 class BaseUpdateAPIView(UpdateAPIView):
     model: type[models.Model]
+    action: str
 
     def put(self, request, *args, **kwargs):
         try:
+            self.action = ViewAction.UPDATE
             return self.update(request, *args, **kwargs)
         except IntegrityError as exc:
             raise APIException(detail=exc)
@@ -98,8 +107,10 @@ class BaseUpdateAPIView(UpdateAPIView):
 
 class BaseDestroyAPIView(DestroyAPIView):
     model: type[models.Model]
+    action: str
 
     def delete(self, request, *args, **kwargs):
+        self.action = ViewAction.DELETE
         return self.destroy(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
