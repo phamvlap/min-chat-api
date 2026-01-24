@@ -29,11 +29,13 @@ load_dotenv(BASE_DIR / ".env")  # Load environment variables from .env file
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["django-websocket-api.onrender.com", "localhost", "127.0.0.1"]
 
+CORS_ALLOW_HEADERS = ["*"]
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 
 # Application definition
