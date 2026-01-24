@@ -31,6 +31,7 @@ class ListCreateFriendRequestAPIView(BaseListAPIView, BaseCreateAPIView):
                 Q(sender=self.request.user) | Q(receiver=self.request.user),
                 status=FriendRequest.Status.PENDING,
             )
+            .select_related("sender", "receiver")
         )
 
 
