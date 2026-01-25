@@ -6,6 +6,7 @@ from django.contrib.auth.hashers import make_password
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
+from base.decorators import retry
 from modules.user.models import User
 from services.clerk_service import ClerkService
 
@@ -23,10 +24,10 @@ class ClerkAuthentication(BaseAuthentication):
         token: str = auth_header.split(" ")[1]
 
         # Verify the token and retrieve user data
-        user_data: dict | None = self._verify_clerk_token(token)
-
-        if not user_data:
-            raise AuthenticationFailed("Invalid Clerk token.")
+        try:
+            user_data: dict = self._verify_clerk_token(token)
+        except Exception as e:
+            raise AuthenticationFailed(f"Invalid Clerk token. Error: {str(e)}")
 
         # Get user ID from the token claims
         user_id: str | None = user_data.get("sub")
@@ -69,23 +70,21 @@ class ClerkAuthentication(BaseAuthentication):
 
         return (user, token)
 
-    def _verify_clerk_token(self, token: str) -> dict | None:
-        try:
-            # Create a JWKS client from the Clerk JWKS URL
-            jwks_client = jwt.PyJWKClient(settings.CLERK_JWKS_URL)
+    @retry(max_retries=3, delay=1.0, backoff=2)
+    def _verify_clerk_token(self, token: str) -> dict:
+        # Create a JWKS client from the Clerk JWKS URL
+        jwks_client = jwt.PyJWKClient(settings.CLERK_JWKS_URL)
 
-            # Get the signing key for the token
-            unverified_header: dict = jwt.get_unverified_header(token)
-            signing_key: str = jwks_client.get_signing_key_from_jwt(token).key
+        # Get the signing key for the token
+        unverified_header: dict = jwt.get_unverified_header(token)
+        signing_key: str = jwks_client.get_signing_key_from_jwt(token).key
 
-            # Decode and verify the token
-            claims = jwt.decode(
-                token,
-                signing_key,
-                algorithms=[unverified_header["alg"]],
-                issuer=settings.CLERK_ISSUER,
-            )
+        # Decode and verify the token
+        claims = jwt.decode(
+            token,
+            signing_key,
+            algorithms=[unverified_header["alg"]],
+            issuer=settings.CLERK_ISSUER,
+        )
 
-            return claims
-        except Exception:
-            return None
+        return claims
