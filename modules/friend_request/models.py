@@ -28,9 +28,6 @@ class FriendRequest(BaseModel):
     )
     responded_at = models.DateTimeField(null=True, blank=True, default=None)
 
-    class Meta:
-        unique_together = ("sender", "receiver", "status")
-
     @classmethod
     def excluded_discovery_statuses(cls) -> list[Status]:
         return [cls.Status.PENDING, cls.Status.ACCEPTED]
