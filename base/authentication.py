@@ -8,6 +8,7 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from base.decorators import retry
 from modules.user.models import User
+from services.caching_service import UserCachingService
 from services.clerk_service import ClerkService
 
 
@@ -33,6 +34,18 @@ class ClerkAuthentication(BaseAuthentication):
         user_id: str | None = user_data.get("sub")
         if not user_id:
             raise AuthenticationFailed("Invalid Clerk token: missing user ID.")
+
+        # Initialize the user caching service
+        user_caching_service = UserCachingService()
+
+        # Generate cache key for the user
+        cache_key: str = user_caching_service.generate_user_cache_key(user_id)
+
+        # Check if the user is cached
+        user = user_caching_service.get(cache_key)
+
+        if user:
+            return (user, token)
 
         # Retrieve the user by user ID from the Clerk
         clerk_service = ClerkService()
@@ -67,6 +80,9 @@ class ClerkAuthentication(BaseAuthentication):
                 "is_user": unsafe_metadata.get("is_user", False),
             },
         )
+
+        # Cache the user for future requests
+        user_caching_service.set(cache_key, user, timeout=300)
 
         return (user, token)
 

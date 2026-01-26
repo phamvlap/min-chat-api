@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
+    "cacheops",
 ] + MODULES_INSTALLED_APPS
 
 MIDDLEWARE = [
@@ -161,3 +162,30 @@ CLERK_API_URL = os.getenv("CLERK_API_URL")
 CLERK_JWKS_URL = os.getenv("CLERK_JWKS_URL")
 CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
 CLERK_ISSUER = os.getenv("CLERK_ISSUER")
+
+# Redis configuration
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = os.getenv("REDIS_PORT")
+REDIS_USERNAME = os.getenv("REDIS_USERNAME")
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+REDIS_USE_SSL = os.getenv("REDIS_USE_SSL", "False") == "True"
+
+REDIS_PROTOCOL = "rediss" if REDIS_USE_SSL else "redis"
+
+if REDIS_USERNAME:
+    REDIS_URL = f"{REDIS_PROTOCOL}://{REDIS_USERNAME}:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}"
+else:
+    REDIS_URL = f"{REDIS_PROTOCOL}://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}"
+
+# Cacheops configuration
+CACHEOPS_REDIS = REDIS_URL
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": CACHEOPS_REDIS,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {"ssl_cert_reqs": None},
+        },
+    }
+}
