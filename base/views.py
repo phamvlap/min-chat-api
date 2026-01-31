@@ -69,7 +69,7 @@ class BaseCreateAPIView(CreateAPIView):
             raise APIException(detail=exc)
 
     def perform_create(self, serializer):
-        return serializer.save(created_at=timezone.now(), created_by=self.request.user.id)
+        serializer.save(created_at=timezone.now(), created_by=self.request.user.id)
 
 
 class BaseRetrieveAPIView(RetrieveAPIView):
