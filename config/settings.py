@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "cacheops",
+    "channels",
 ] + MODULES_INSTALLED_APPS
 
 MIDDLEWARE = [
@@ -189,3 +190,16 @@ CACHES = {
         },
     }
 }
+
+# Channels configuration
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [{"address": REDIS_URL, "ssl_cert_reqs": None}],
+        },
+    },
+}
+
+# ASGI application
+ASGI_APPLICATION = "config.asgi.application"
