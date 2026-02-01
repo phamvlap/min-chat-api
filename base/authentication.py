@@ -1,39 +1,31 @@
 import uuid
+from typing import Any
+from urllib.parse import parse_qs
 
-import jwt
-from django.conf import settings
+from channels.db import database_sync_to_async
+from channels.middleware import BaseMiddleware
+from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from base.decorators import retry
-from modules.user.models import User
-from services.caching_service import UserCachingService
-from services.clerk_service import ClerkService
+from utils.clerk_utils import ClerkUtils
 
 
-class ClerkAuthentication(BaseAuthentication):
-    def authenticate(self, request):
-        # Extract the Clerk token from the Authorization header
-        auth_header: str | None = request.headers.get("Authorization", None)
+class BaseClerkAuthentication:
+    def get_or_create_user(self, user_id: str) -> Any | None:
+        return self._get_or_create_user(user_id)
 
-        # No token provided or invalid format
-        if not auth_header or not auth_header.startswith("Bearer "):
-            return None  # No authentication provided
+    @database_sync_to_async
+    def async_get_or_create_user(self, user_id: str) -> Any | None:
+        return self._get_or_create_user(user_id)
 
-        # Extract the token
-        token: str = auth_header.split(" ")[1]
+    def _get_or_create_user(self, user_id: str) -> Any | None:
+        # Lazy import to ensure Django settings are fully loaded
+        from services.caching_service import UserCachingService
+        from services.clerk_service import ClerkService
 
-        # Verify the token and retrieve user data
-        try:
-            user_data: dict = self._verify_clerk_token(token)
-        except Exception as e:
-            raise AuthenticationFailed(f"Invalid Clerk token. Error: {str(e)}")
-
-        # Get user ID from the token claims
-        user_id: str | None = user_data.get("sub")
-        if not user_id:
-            raise AuthenticationFailed("Invalid Clerk token: missing user ID.")
+        User = get_user_model()
 
         # Initialize the user caching service
         user_caching_service = UserCachingService()
@@ -44,15 +36,16 @@ class ClerkAuthentication(BaseAuthentication):
         # Check if the user is cached
         user = user_caching_service.get(cache_key)
 
+        # Return cached user if found
         if user:
-            return (user, token)
+            return user
 
-        # Retrieve the user by user ID from the Clerk
         clerk_service = ClerkService()
 
+        # Retrieve user data from Clerk
         clerk_user: dict | None = clerk_service.retrieve_user(user_id)
         if not clerk_user:
-            raise AuthenticationFailed("Clerk user not found.")
+            return None
 
         # Prepare user data
         username: str = clerk_user["username"] if clerk_user.get("username") else f"user_{user_id}"
@@ -84,23 +77,79 @@ class ClerkAuthentication(BaseAuthentication):
         # Cache the user for future requests
         user_caching_service.set(cache_key, user, timeout=300)
 
+        return user
+
+
+class ClerkAuthentication(BaseAuthentication, BaseClerkAuthentication):
+    """
+    Custom authentication class to authenticate users using Clerk tokens.
+    """
+
+    def authenticate(self, request):
+        # Extract the Clerk token from the Authorization header
+        auth_header: str | None = request.headers.get("Authorization", None)
+
+        # No token provided or invalid format
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return None  # No authentication provided
+
+        # Extract the token
+        token: str = auth_header.split(" ")[1]
+
+        # Verify the token and retrieve user data
+        try:
+            user_data: dict = ClerkUtils.verify_token(token)
+        except Exception as e:
+            raise AuthenticationFailed(f"Invalid Clerk token. Error: {str(e)}")
+
+        # Get user ID from the token claims
+        user_id: str | None = user_data.get("sub")
+        if not user_id:
+            raise AuthenticationFailed("Invalid Clerk token: missing user ID.")
+
+        # Retrieve or create the user
+        user: Any | None = self.get_or_create_user(user_id)
+
+        if not user:
+            raise AuthenticationFailed("User not found or could not be created.")
+
         return (user, token)
 
-    @retry(max_retries=3, delay=1.0, backoff=2)
-    def _verify_clerk_token(self, token: str) -> dict:
-        # Create a JWKS client from the Clerk JWKS URL
-        jwks_client = jwt.PyJWKClient(settings.CLERK_JWKS_URL)
 
-        # Get the signing key for the token
-        unverified_header: dict = jwt.get_unverified_header(token)
-        signing_key: str = jwks_client.get_signing_key_from_jwt(token).key
+class ClerkAuthMiddleware(BaseMiddleware, BaseClerkAuthentication):
+    """
+    Custom middleware to authenticate WebSocket connections using Clerk tokens.
+    """
 
-        # Decode and verify the token
-        claims = jwt.decode(
-            token,
-            signing_key,
-            algorithms=[unverified_header["alg"]],
-            issuer=settings.CLERK_ISSUER,
-        )
+    async def __call__(self, scope, receive, send):
+        # Extract the query string from the scope
+        query_string: str = scope.get("query_string", b"").decode("utf-8")
+        query_params: dict[str, list[str]] = parse_qs(query_string)
 
-        return claims
+        # Get the Clerk token from the query parameters
+        token_list: list[str] = query_params.get("token", [])
+        if not token_list:
+            scope["user"] = None
+            return await super().__call__(scope, receive, send)
+
+        # Get the first token (if multiple are provided)
+        token: str = token_list[0]
+
+        # Verify the token and retrieve user data
+        try:
+            user_data: dict = ClerkUtils.verify_token(token)
+        except Exception:
+            scope["user"] = None
+            return await super().__call__(scope, receive, send)
+
+        # Get user ID from the token claims
+        user_id: str | None = user_data.get("sub")
+        if not user_id:
+            scope["user"] = None
+            return await super().__call__(scope, receive, send)
+
+        # Retrieve or create the user asynchronously
+        user: Any | None = await self.async_get_or_create_user(user_id)
+
+        scope["user"] = user
+        return await super().__call__(scope, receive, send)
