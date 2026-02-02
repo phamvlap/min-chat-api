@@ -125,3 +125,21 @@ class ListConversationSerializer(serializers.ModelSerializer):
             "unread_message_count",
         )
         read_only_fields = fields
+
+
+class SendMessageSerializer(serializers.Serializer):
+    message = serializers.CharField(allow_blank=False)
+    message_type = serializers.ChoiceField(
+        choices=Message.Types.choices,
+        default=Message.Types.TEXT,
+    )
+
+
+class BuildPayloadMessageSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    conversation_id = serializers.UUIDField()
+    sender_id = serializers.UUIDField()
+    message_id = serializers.UUIDField()
+    message = serializers.CharField()
+    message_type = serializers.CharField()
+    created_at = serializers.DateTimeField()

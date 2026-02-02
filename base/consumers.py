@@ -1,3 +1,5 @@
+import json
+
 from channels.generic.websocket import WebsocketConsumer
 
 
@@ -12,3 +14,14 @@ class BaseWebsocketConsumer(WebsocketConsumer):
 
     def get_permissions(self):
         return [permission() for permission in self.permission_classes]
+
+    def send_error(self, code: str, message: str) -> None:
+        self.send(
+            text_data=json.dumps(
+                {
+                    "type": "error",
+                    "code": code,
+                    "message": message,
+                }
+            )
+        )

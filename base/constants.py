@@ -17,3 +17,13 @@ class ResponseStatus(str, Enum):
 class FriendRequestAction(str, Enum):
     ACCEPT = "accept"
     REJECT = "reject"
+
+
+class WebSocket:
+    class ClientEvent:
+        class Message(str, Enum):
+            SEND_MESSAGE = "send_message"
+
+    class ServerEvent:
+        class Message(str, Enum):
+            MESSAGE = "chat.message"
