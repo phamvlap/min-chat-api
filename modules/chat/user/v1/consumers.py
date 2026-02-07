@@ -117,10 +117,9 @@ class ChatConsumer(BaseWebsocketConsumer):
         self.conversation.last_message_at = message.created_at
         self.conversation.save(update_fields=["last_message", "last_message_at"])
 
-        # Update last visible message for the sender
+        # Update last visible message for each member
         ConversationMember.objects.filter(
             conversation=self.conversation,
-            user=self.user,
             deleted_at=None,
         ).update(last_visible_message=message)
 
@@ -155,35 +154,17 @@ class ChatConsumer(BaseWebsocketConsumer):
         self.send(text_data=json.dumps(payload_message_serializer.data))
 
     def _dispatch_client_event(self, event_type: str, data: dict) -> None:
-        # If the event type is not recognized, ignore it safely
-        if event_type not in CLIENT_EVENT_HANDLERS:
-            return
-
-        # Get the handler method name and method
-        handler_method_name: str = CLIENT_EVENT_HANDLERS[event_type]
-        handler_method = getattr(self, handler_method_name, None)
-
-        # If the handler method does not exist, ignore safely
-        if not handler_method:
-            return
-
-        # Call the handler method with the data
-        handler_method(data)
+        self.dispatch_event(
+            CLIENT_EVENT_HANDLERS,
+            event_type=event_type,
+            data=data,
+        )
 
     def _dispatch_server_event(self, event: dict) -> None:
         event_type: str | None = event.get("type")
 
-        # If the event type is not recognized, ignore it safely
-        if event_type not in SERVER_EVENT_HANDLERS:
-            return
-
-        # Get the handler method name and method
-        handler_method_name: str = SERVER_EVENT_HANDLERS[event_type]
-        handler_method = getattr(self, handler_method_name, None)
-
-        # If the handler method does not exist, ignore safely
-        if not handler_method:
-            return
-
-        # Call the handler method with the event
-        handler_method(event)
+        self.dispatch_event(
+            SERVER_EVENT_HANDLERS,
+            event_type=event_type if event_type else "",
+            data=event,
+        )

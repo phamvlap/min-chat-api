@@ -25,3 +25,19 @@ class BaseWebsocketConsumer(WebsocketConsumer):
                 }
             )
         )
+
+    def dispatch_event(self, event_handlers: dict, event_type: str, data: dict):
+        # If the event type is not recognized, ignore it safely
+        if event_type not in event_handlers:
+            return
+
+        # Get the handler method name and method
+        handler_method_name: str = event_handlers[event_type]
+        handler_method = getattr(self, handler_method_name, None)
+
+        # If the handler method does not exist, ignore safely
+        if not handler_method:
+            return
+
+        # Call the handler method with the event
+        handler_method(data)
