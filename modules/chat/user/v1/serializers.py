@@ -127,6 +127,56 @@ class ListConversationSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class RetrieveConversationSerializer(serializers.ModelSerializer):
+    owner = NestedUserSerializer(read_only=True)
+    members = NestedConversationMemberSerializer(
+        many=True,
+        read_only=True,
+        source="conversation_member",
+    )
+    last_message = NestedMessageSerializer(read_only=True)
+    unread_message_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Conversation
+        fields = (
+            "id",
+            "type",
+            "title",
+            "owner",
+            "last_message",
+            "last_message_at",
+            "members",
+            "created_at",
+            "unread_message_count",
+        )
+        read_only_fields = fields
+
+
+class ListMessageSerializer(serializers.ModelSerializer):
+    sender = NestedUserSerializer(read_only=True)
+    replied_to = NestedMessageSerializer(read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ("id", "sender", "message", "message_type", "created_at", "replied_to")
+        read_only_fields = fields
+
+
+class NestedMessageSerializer(serializers.ModelSerializer):
+    sender = NestedUserSerializer(read_only=True)
+    replied_to = NestedMessageSerializer(read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ("id", "sender", "message", "message_type", "created_at", "replied_to")
+        read_only_fields = fields
+
+
+class ReadMessageSerializer(serializers.Serializer):
+    read_before = serializers.DateTimeField()
+
+
 class SendMessageSerializer(serializers.Serializer):
     message = serializers.CharField(allow_blank=False)
     message_type = serializers.ChoiceField(
