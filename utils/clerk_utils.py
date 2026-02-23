@@ -1,15 +1,21 @@
+from functools import lru_cache
+
 import jwt
 from django.conf import settings
 
 from base.decorators import retry
 
 
+@lru_cache(maxsize=1)
+def get_jwks_client():
+    return jwt.PyJWKClient(settings.CLERK_JWKS_URL)
+
+
 class ClerkUtils:
     @staticmethod
     @retry(max_retries=3, delay=1.0, backoff=2)
     def verify_token(token: str) -> dict:
-        # Create a JWKS client from the Clerk JWKS URL
-        jwks_client = jwt.PyJWKClient(settings.CLERK_JWKS_URL)
+        jwks_client = get_jwks_client()
 
         # Get the signing key for the token
         unverified_header: dict = jwt.get_unverified_header(token)
