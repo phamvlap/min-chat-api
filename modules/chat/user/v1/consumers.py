@@ -130,6 +130,7 @@ class ChatConsumer(BaseWebsocketConsumer):
                 "type": WebSocket.ServerEvent.Message.MESSAGE,
                 "conversation_id": str(self.conversation.id),
                 "sender_id": str(self.user.id),
+                "sender_username": self.user.username,
                 "message_id": str(message.id),
                 "message": message.message,
                 "message_type": message.message_type,
