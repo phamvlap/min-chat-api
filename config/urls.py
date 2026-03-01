@@ -17,12 +17,47 @@ Including another URLconf
 
 from django.urls import include, path
 
-from base.views import HealthCheckAPIView
+from base.views import (
+    CompleteMultipartUploadAPIView,
+    CreateMultipartUploadAPIView,
+    CreatePresignedURLAPIView,
+    GetPresignedURLAPIView,
+    GetPresignedURLForMultipartUploadAPIView,
+    HealthCheckAPIView,
+)
 from modules.urls import urlpatterns as module_urlpatterns
 
 urlpatterns = [
     path("", HealthCheckAPIView.as_view(), name="health-check-api"),
     path("api/general/authentication/", include("modules.user.authentication.urls")),
-    path("api/testing/", include("modules.testing.urls")),
+    # Media upload related URLs
+    path(
+        "api/general/upload/create-presigned-url/",
+        CreatePresignedURLAPIView.as_view(),
+        name="create-presigned-url-api",
+    ),
+    path(
+        "api/general/upload/get-presigned-url/",
+        GetPresignedURLAPIView.as_view(),
+        name="get-presigned-url-api",
+    ),
+    path(
+        "api/general/upload/multipart-upload/",
+        CreateMultipartUploadAPIView.as_view(),
+        name="create-multipart-upload-api",
+    ),
+    path(
+        "api/general/upload/multipart-upload/get-presigned-url/",
+        GetPresignedURLForMultipartUploadAPIView.as_view(),
+        name="get-presigned-url-for-multipart-upload-api",
+    ),
+    path(
+        "api/general/upload/multipart-upload/complete/",
+        CompleteMultipartUploadAPIView.as_view(),
+        name="complete-multipart-upload-api",
+    ),
+    # Module URLs
     path("api/", include((module_urlpatterns, "modules"), namespace="modules")),
+    # Testing URLs
+    path("api/testing/", include("modules.testing.urls")),
 ]

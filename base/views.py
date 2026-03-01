@@ -18,6 +18,15 @@ from rest_framework.response import Response
 from base.constants import ViewAction
 from base.pagination import ItemIndexPagination
 
+from .permission import IsAuthenticated
+from .serializers import (
+    CompleteMultipartUploadSerializer,
+    CreateMultipartUploadSerializer,
+    CreatePresignedURLSerializer,
+    GetPresignedURLForMultipartUploadSerializer,
+    GetPresignedURLSerializer,
+)
+
 
 class HealthCheckAPIView(RetrieveAPIView):
     permission_classes = ()
@@ -117,3 +126,34 @@ class BaseDestroyAPIView(DestroyAPIView):
         instance.deleted_at = timezone.now()
         instance.deleted_by = self.request.user.id
         instance.save()
+
+
+# Media upload related views
+class CreatePresignedURLAPIView(BaseCreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    model = None
+    serializer_class = CreatePresignedURLSerializer
+
+
+class GetPresignedURLAPIView(BaseCreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    model = None
+    serializer_class = GetPresignedURLSerializer
+
+
+class CreateMultipartUploadAPIView(BaseCreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    model = None
+    serializer_class = CreateMultipartUploadSerializer
+
+
+class GetPresignedURLForMultipartUploadAPIView(BaseCreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    model = None
+    serializer_class = GetPresignedURLForMultipartUploadSerializer
+
+
+class CompleteMultipartUploadAPIView(BaseCreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    model = None
+    serializer_class = CompleteMultipartUploadSerializer
