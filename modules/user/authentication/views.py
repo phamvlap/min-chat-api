@@ -1,8 +1,9 @@
+from base.constants import ViewAction
 from base.permission import IsAuthenticated
-from base.views import BaseCreateAPIView, BaseRetrieveAPIView
+from base.views import BaseCreateAPIView, BaseRetrieveAPIView, BaseUpdateAPIView
 from modules.user.models import User
 
-from .serializers import GetStartedSerializer, UserSerializer
+from .serializers import GetStartedSerializer, RetrieveUserSerializer, UpdateUserSerializer
 
 
 class GetStartedAPIView(BaseCreateAPIView):
@@ -11,10 +12,14 @@ class GetStartedAPIView(BaseCreateAPIView):
     serializer_class = GetStartedSerializer
 
 
-class UserRetrieveAPIView(BaseRetrieveAPIView):
+class RetrieveUpdateUserAPIView(BaseRetrieveAPIView, BaseUpdateAPIView):
     permission_classes = (IsAuthenticated,)
     model = User
-    serializer_class = UserSerializer
+
+    def get_serializer_class(self):
+        if self.action == ViewAction.UPDATE:
+            return UpdateUserSerializer
+        return RetrieveUserSerializer
 
     def get_object(self):
         return self.request.user

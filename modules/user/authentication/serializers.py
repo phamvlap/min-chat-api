@@ -1,9 +1,17 @@
 from rest_framework import serializers
 
+from modules.media.models import Media
+from modules.media.serializers import (
+    NestedMediaInCreateAndUpdateSerializer,
+    NestedMediaInRetrieveSerializer,
+)
 from modules.user.models import User
+from services.caching_service import UserCachingService
 
 
-class UserSerializer(serializers.ModelSerializer):
+class RetrieveUserSerializer(serializers.ModelSerializer):
+    avatar = NestedMediaInRetrieveSerializer(read_only=True)
+
     class Meta:
         model = User
         fields = (
@@ -15,8 +23,55 @@ class UserSerializer(serializers.ModelSerializer):
             "is_user",
             "clerk_user_id",
             "is_active",
+            "avatar",
         )
         read_only_fields = fields
+
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(max_length=150, required=False)
+    last_name = serializers.CharField(
+        max_length=150,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    avatar = NestedMediaInCreateAndUpdateSerializer(required=False, allow_null=True)
+
+    class Meta:
+        model = User
+        fields = ("first_name", "last_name", "avatar")
+
+    def validate(self, attrs):
+        if "avatar" in attrs:
+            if attrs["avatar"] is not None:
+                avatar_id = attrs["avatar"]["id"]
+                media: Media | None = Media.objects.filter(
+                    id=avatar_id,
+                    deleted_at=None,
+                    is_active=True,
+                ).first()
+                if not media:
+                    raise serializers.ValidationError(f"Media with id {avatar_id} does not exist.")
+                attrs["avatar"] = media
+            else:
+                attrs["avatar"] = None
+        return attrs
+
+    def update(self, instance, validated_data):
+        user: User = super().update(instance, validated_data)
+
+        # Clear cache for the updated user
+        user_caching_service = UserCachingService()
+
+        # Generate cache key for the user
+        cache_key: str = user_caching_service.generate_user_cache_key(user.clerk_user_id)
+        user_caching_service.delete(cache_key)
+
+        return RetrieveUserSerializer(user).data
+
+    def to_representation(self, instance):
+        return instance
 
 
 class GetStartedSerializer(serializers.ModelSerializer):

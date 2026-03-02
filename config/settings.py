@@ -62,6 +62,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "base.middlewares.RequestLoggingMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -157,6 +158,49 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+# Logging configuration
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "detailed": {
+            "format": ("[%(levelname)s] %(asctime)s | %(message)s"),
+        },
+        "simple": {
+            "format": ("[%(levelname)s] %(asctime)s | %(message)s"),
+        },
+    },
+    "filters": {
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+            "formatter": "detailed",
+        },
+        "simple_console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+    },
+    "loggers": {
+        "django.db.backends": {
+            "level": "DEBUG",
+            "handlers": ["console"],
+            "propagate": False,
+        },
+    },
+    "root": {
+        "handlers": ["simple_console"],
+        "level": "INFO",
+    },
+}
 
 # Clerk configuration
 CLERK_API_URL = os.getenv("CLERK_API_URL")

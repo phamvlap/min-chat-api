@@ -14,3 +14,12 @@ class User(AbstractBaseUser):
 
     # Clerk Authentication
     clerk_user_id = models.CharField(max_length=256, unique=True, null=True, blank=True)
+
+    # Avatar
+    avatar = models.ForeignKey(
+        "media.Media",
+        on_delete=models.SET_NULL,
+        null=True,
+        default=None,
+        related_name="avatar_user",
+    )
