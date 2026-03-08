@@ -1,3 +1,5 @@
+import mimetypes
+
 from base.constants import UploadConstants
 from modules.media.models import Media
 
@@ -19,3 +21,10 @@ def get_file_type_from_extension(file_extension: str) -> str | None:
             return file_type
 
     return None
+
+
+def guess_mime_type(file_name: str) -> str:
+    mime_type, _ = mimetypes.guess_type(file_name)
+    if not mime_type:
+        return "application/octet-stream"
+    return mime_type

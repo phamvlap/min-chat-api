@@ -101,6 +101,9 @@ class GetPresignedURLSerializer(serializers.Serializer):
 
         return {"presigned_url": presigned_url}
 
+    def to_representation(self, instance):
+        return instance
+
 
 class CreateMultipartUploadSerializer(BaseUploadMediaSerializer):
     def create(self, validated_data):
@@ -114,7 +117,7 @@ class CreateMultipartUploadSerializer(BaseUploadMediaSerializer):
         bucket_name: str = (
             settings.S3_PUBLIC_BUCKET if validated_data["public"] else settings.S3_PRIVATE_BUCKET
         )
-        upload_id: str = S3Service().create_multipart_upload(bucket_name, key)
+        upload_id: str = S3Service().create_multipart_upload(bucket_name, key, 600)
 
         # Create media record
         Media.objects.create(
@@ -148,6 +151,9 @@ class GetPresignedURLForMultipartUploadSerializer(serializers.Serializer):
         )
 
         return {"presigned_url": presigned_url}
+
+    def to_representation(self, instance):
+        return instance
 
 
 class MultipartUploadChunkSerializer(serializers.Serializer):
@@ -183,3 +189,6 @@ class CompleteMultipartUploadSerializer(serializers.Serializer):
             "key": media.key,
             "message": "Multipart upload completed successfully.",
         }
+
+    def to_representation(self, instance):
+        return instance

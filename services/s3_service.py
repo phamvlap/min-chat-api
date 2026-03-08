@@ -6,6 +6,8 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 from django.conf import settings
 
+from utils.file_utils import guess_mime_type
+
 logger = logging.getLogger(__name__)
 
 
@@ -63,7 +65,7 @@ class S3Service:
             raise
         return presigned_url
 
-    def create_multipart_upload(self, bucket_name: str, key: str) -> str:
+    def create_multipart_upload(self, bucket_name: str, key: str, expires_in: int) -> str:
         """Initiate a multipart upload and return the upload ID.
 
         Args:
@@ -72,7 +74,14 @@ class S3Service:
         Returns:
             The upload ID as a string.
         """
-        response = self.s3_client.create_multipart_upload(Bucket=bucket_name, Key=key)
+        content_type: str = guess_mime_type(key)
+
+        response = self.s3_client.create_multipart_upload(
+            Bucket=bucket_name,
+            Key=key,
+            Expires=expires_in,
+            ContentType=content_type,
+        )
         return response["UploadId"]
 
     def generate_presigned_url_for_multipart_upload(
