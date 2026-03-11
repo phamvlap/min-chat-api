@@ -1,8 +1,8 @@
-from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from base.models import BaseModel
+from utils.upload_utils import build_public_url
 
 
 class Media(BaseModel):
@@ -26,6 +26,6 @@ class Media(BaseModel):
     @property
     def public_url(self) -> str | None:
         if self.public:
-            return f"{settings.SUPABASE_PROJECT_URL}/storage/v1/object/public/{settings.S3_PUBLIC_BUCKET}/{self.key}"
+            return build_public_url(self.key)
 
         return None

@@ -1,13 +1,12 @@
-from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from base.constants import UploadConstants
+from base.constants import TimeConstants, UploadConstants
 from modules.media.models import Media
 from services.s3_service import S3Service
 from templates.error_templates import ErrorTemplate
 from utils.file_utils import get_file_extension, get_file_type_from_extension
-from utils.upload_utils import generate_s3_key
+from utils.upload_utils import generate_s3_key, get_bucket_name
 
 
 class BaseUploadMediaSerializer(serializers.Serializer):
@@ -66,10 +65,13 @@ class CreatePresignedURLSerializer(BaseUploadMediaSerializer):
         )
 
         # Generate presigned URL
-        bucket_name: str = (
-            settings.S3_PUBLIC_BUCKET if validated_data["public"] else settings.S3_PRIVATE_BUCKET
+        bucket_name: str = get_bucket_name(public=validated_data["public"])
+        presigned_url = S3Service().generate_presigned_url(
+            bucket_name=bucket_name,
+            method="put",
+            params={"key": key},
+            expires_in=5 * TimeConstants.ONE_MINUTE,
         )
-        presigned_url = S3Service().generate_presigned_url(bucket_name, "put", {"key": key}, 300)
 
         # Create media record
         media = Media.objects.create(
@@ -90,13 +92,13 @@ class GetPresignedURLSerializer(serializers.Serializer):
         if not media:
             raise ValidationError("Media with the given key does not exist.")
 
-        bucket_name: str = settings.S3_PUBLIC_BUCKET if media.public else settings.S3_PRIVATE_BUCKET
+        bucket_name: str = get_bucket_name(public=media.public)
 
         presigned_url: str = S3Service().generate_presigned_url(
             bucket_name=bucket_name,
             method="get",
             params={"key": validated_data["key"]},
-            expires_in=10 * 60,  # 10 minutes
+            expires_in=10 * TimeConstants.ONE_MINUTE,  # 10 minutes
         )
 
         return {"presigned_url": presigned_url}
@@ -114,10 +116,12 @@ class CreateMultipartUploadSerializer(BaseUploadMediaSerializer):
         )
 
         # Create multipart upload and get upload ID
-        bucket_name: str = (
-            settings.S3_PUBLIC_BUCKET if validated_data["public"] else settings.S3_PRIVATE_BUCKET
+        bucket_name: str = get_bucket_name(public=validated_data["public"])
+        upload_id: str = S3Service().create_multipart_upload(
+            bucket_name=bucket_name,
+            key=key,
+            expires_in=5 * TimeConstants.ONE_MINUTE,
         )
-        upload_id: str = S3Service().create_multipart_upload(bucket_name, key, 600)
 
         # Create media record
         Media.objects.create(
@@ -141,7 +145,7 @@ class GetPresignedURLForMultipartUploadSerializer(serializers.Serializer):
         if not media:
             raise ValidationError("Media with the given key does not exist.")
 
-        bucket_name: str = settings.S3_PUBLIC_BUCKET if media.public else settings.S3_PRIVATE_BUCKET
+        bucket_name: str = get_bucket_name(public=media.public)
 
         presigned_url: str = S3Service().generate_presigned_url_for_multipart_upload(
             bucket_name=bucket_name,
@@ -171,7 +175,7 @@ class CompleteMultipartUploadSerializer(serializers.Serializer):
         if not media:
             raise ValidationError("Media with the given key does not exist.")
 
-        bucket_name: str = settings.S3_PUBLIC_BUCKET if media.public else settings.S3_PRIVATE_BUCKET
+        bucket_name: str = get_bucket_name(public=media.public)
 
         S3Service().complete_multipart_upload(
             bucket_name=bucket_name,

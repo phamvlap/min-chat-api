@@ -215,3 +215,11 @@ class UploadConstants:
         ".3g2",
         ".webm",
     ]
+
+
+class TimeConstants:
+    ONE_SECOND = 1
+    ONE_MINUTE = 60 * ONE_SECOND
+    ONE_HOUR = 60 * ONE_MINUTE
+    ONE_DAY = 24 * ONE_HOUR
+    ONE_WEEK = 7 * ONE_DAY
