@@ -123,8 +123,12 @@ class AcceptOrRejectFriendRequestSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
         if instance.status == FriendRequest.Status.ACCEPTED:
             # Create friendship in both directions
-            Friend.objects.create(user=instance.sender, friend=instance.receiver)
-            Friend.objects.create(user=instance.receiver, friend=instance.sender)
+            Friend.objects.bulk_create(
+                [
+                    Friend(user=instance.sender, friend=instance.receiver),
+                    Friend(user=instance.receiver, friend=instance.sender),
+                ]
+            )
         return {
             "status": ResponseStatus.SUCCESS,
             "message": "Friend request processed successfully.",

@@ -26,5 +26,5 @@ class ListFriendAPIView(BaseListAPIView):
                 user=self.request.user,
                 deleted_at=None,
             )
-            .select_related("friend")
+            .select_related("friend__avatar")
         )

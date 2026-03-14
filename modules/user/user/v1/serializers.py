@@ -1,10 +1,13 @@
 from rest_framework import serializers
 
+from modules.media.serializers import NestedMediaInRetrieveSerializer
 from modules.user.models import User
 
 
 class DiscoverUserSerializer(serializers.ModelSerializer):
+    avatar = NestedMediaInRetrieveSerializer(read_only=True)
+
     class Meta:
         model = User
-        fields = ("id", "username", "first_name", "last_name", "email")
+        fields = ("id", "username", "first_name", "last_name", "email", "avatar")
         read_only_fields = fields

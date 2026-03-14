@@ -155,17 +155,7 @@ class RetrieveConversationSerializer(serializers.ModelSerializer):
 
 class ListMessageSerializer(serializers.ModelSerializer):
     sender = NestedUserSerializer(read_only=True)
-    replied_to = NestedMessageSerializer(read_only=True)
-
-    class Meta:
-        model = Message
-        fields = ("id", "sender", "message", "message_type", "created_at", "replied_to")
-        read_only_fields = fields
-
-
-class NestedMessageSerializer(serializers.ModelSerializer):
-    sender = NestedUserSerializer(read_only=True)
-    replied_to = NestedMessageSerializer(read_only=True)
+    replied_to = "self"  # Recursive relationship for nested replies
 
     class Meta:
         model = Message

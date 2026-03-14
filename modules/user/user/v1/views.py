@@ -35,4 +35,5 @@ class DiscoverUserAPIView(BaseListAPIView):
                     receiver_friend_request__deleted_at=None,
                 )
             )
+            .select_related("avatar")
         )

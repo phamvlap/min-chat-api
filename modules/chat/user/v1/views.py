@@ -63,13 +63,13 @@ class ListConversationAPIView(BaseListAPIView):
                 )
             )
             .order_by("-last_message_at")
-            .select_related("owner", "last_message")
+            .select_related("owner__avatar", "last_message__sender__avatar")
             .prefetch_related(
                 Prefetch(
                     "conversation_member",
                     queryset=ConversationMember.objects.filter(deleted_at=None).select_related(
-                        "user",
-                        "last_visible_message",
+                        "user__avatar",
+                        "last_visible_message__sender__avatar",
                     ),
                 )
             )
@@ -117,13 +117,13 @@ class RetrieveConversationAPIView(BaseRetrieveAPIView):
                 )
             )
             .order_by("-last_message_at")
-            .select_related("owner", "last_message")
+            .select_related("owner__avatar", "last_message__sender__avatar")
             .prefetch_related(
                 Prefetch(
                     "conversation_member",
                     queryset=ConversationMember.objects.filter(deleted_at=None).select_related(
-                        "user",
-                        "last_visible_message",
+                        "user__avatar",
+                        "last_visible_message__sender__avatar",
                     ),
                 )
             )
@@ -148,7 +148,7 @@ class ListMessageAPIView(BaseListAPIView):
                 conversation__conversation_member__user=user,
                 conversation__conversation_member__deleted_at=None,
             )
-            .select_related("sender", "replied_to", "conversation")
+            .select_related("sender__avatar", "replied_to__sender__avatar")
             .order_by("-created_at")
         )
 
