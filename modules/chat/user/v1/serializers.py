@@ -2,6 +2,7 @@ from django.db.models import Count
 from rest_framework import serializers
 
 from modules.chat.models import Conversation, ConversationMember, Message
+from modules.media.serializers import NestedMediaInRetrieveSerializer
 from modules.user.models import User
 from modules.user.serializers import NestedUserSerializer
 
@@ -102,6 +103,7 @@ class NestedConversationMemberSerializer(serializers.ModelSerializer):
 
 
 class ListConversationSerializer(serializers.ModelSerializer):
+    avatar = NestedMediaInRetrieveSerializer(read_only=True)
     owner = NestedUserSerializer(read_only=True)
     members = NestedConversationMemberSerializer(
         many=True,
@@ -117,6 +119,7 @@ class ListConversationSerializer(serializers.ModelSerializer):
             "id",
             "type",
             "title",
+            "avatar",
             "owner",
             "last_message",
             "last_message_at",
@@ -128,6 +131,7 @@ class ListConversationSerializer(serializers.ModelSerializer):
 
 
 class RetrieveConversationSerializer(serializers.ModelSerializer):
+    avatar = NestedMediaInRetrieveSerializer(read_only=True)
     owner = NestedUserSerializer(read_only=True)
     members = NestedConversationMemberSerializer(
         many=True,
@@ -143,6 +147,7 @@ class RetrieveConversationSerializer(serializers.ModelSerializer):
             "id",
             "type",
             "title",
+            "avatar",
             "owner",
             "last_message",
             "last_message_at",

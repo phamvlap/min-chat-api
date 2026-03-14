@@ -24,6 +24,13 @@ class Conversation(BaseModel):
 
     # Fields for group conversation
     title = models.CharField(max_length=256, blank=True, null=True, default=None)
+    avatar = models.ForeignKey(
+        "media.Media",
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        default=None,
+    )
     owner = models.ForeignKey(
         "user.User",
         on_delete=models.CASCADE,

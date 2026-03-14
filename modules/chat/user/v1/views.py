@@ -63,7 +63,7 @@ class ListConversationAPIView(BaseListAPIView):
                 )
             )
             .order_by("-last_message_at")
-            .select_related("owner__avatar", "last_message__sender__avatar")
+            .select_related("avatar", "owner__avatar", "last_message__sender__avatar")
             .prefetch_related(
                 Prefetch(
                     "conversation_member",
@@ -117,7 +117,7 @@ class RetrieveConversationAPIView(BaseRetrieveAPIView):
                 )
             )
             .order_by("-last_message_at")
-            .select_related("owner__avatar", "last_message__sender__avatar")
+            .select_related("avatar", "owner__avatar", "last_message__sender__avatar")
             .prefetch_related(
                 Prefetch(
                     "conversation_member",
