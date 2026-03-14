@@ -1,7 +1,8 @@
-from enum import Enum
+from enum import StrEnum
+from typing import ClassVar
 
 
-class ViewAction(str, Enum):
+class ViewAction(StrEnum):
     CREATE = "create"
     RETRIEVE = "retrieve"
     UPDATE = "update"
@@ -9,35 +10,35 @@ class ViewAction(str, Enum):
     LIST = "list"
 
 
-class ResponseStatus(str, Enum):
+class ResponseStatus(StrEnum):
     SUCCESS = "success"
     FAILURE = "failure"
 
 
-class FriendRequestAction(str, Enum):
+class FriendRequestAction(StrEnum):
     ACCEPT = "accept"
     REJECT = "reject"
 
 
 class WebSocket:
     class ClientEvent:
-        class Message(str, Enum):
+        class Message(StrEnum):
             SEND_MESSAGE = "send_message"
 
     class ServerEvent:
-        class Message(str, Enum):
+        class Message(StrEnum):
             MESSAGE = "chat.message"
 
 
 class UploadConstants:
-    FILE_OPTIONS = {
+    FILE_OPTIONS: ClassVar[dict[str, str]] = {
         "DOCUMENT": "DOCUMENT",
         "VIDEO": "VIDEO",
         "IMAGE": "IMAGE",
         "AUDIO": "AUDIO",
     }
 
-    VALID_IMAGE_FILE_EXTENSIONS = [
+    VALID_IMAGE_FILE_EXTENSIONS: ClassVar[list[str]] = [
         ".jpg",
         ".png",
         ".webp",
@@ -45,7 +46,7 @@ class UploadConstants:
         ".svg",
     ]
 
-    VALID_VIDEO_FILE_EXTENSIONS = [
+    VALID_VIDEO_FILE_EXTENSIONS: ClassVar[list[str]] = [
         ".mp4",
         ".avi",
         ".flv",
@@ -55,12 +56,12 @@ class UploadConstants:
         ".wmv",
     ]
 
-    VALID_AUDIO_FILE_EXTENSIONS = [
+    VALID_AUDIO_FILE_EXTENSIONS: ClassVar[list[str]] = [
         ".mp3",
         ".m4a",
     ]
 
-    VALID_DOCUMENT_EXTENSIONS = [
+    VALID_DOCUMENT_EXTENSIONS: ClassVar[list[str]] = [
         ".pdf",
         ".doc",
         ".docx",
@@ -72,14 +73,14 @@ class UploadConstants:
         ".csv",
     ]
 
-    VALID_FILE_EXTENSIONS = [
+    VALID_FILE_EXTENSIONS: ClassVar[list[str]] = [
         *VALID_IMAGE_FILE_EXTENSIONS,
         *VALID_VIDEO_FILE_EXTENSIONS,
         *VALID_DOCUMENT_EXTENSIONS,
         *VALID_AUDIO_FILE_EXTENSIONS,
     ]
 
-    TOTAL_IMAGE_EXTENSIONS = [
+    TOTAL_IMAGE_EXTENSIONS: ClassVar[list[str]] = [
         ".jpg",
         ".jpeg",
         ".jpe",
@@ -116,7 +117,7 @@ class UploadConstants:
         ".eps",
     ]
 
-    TOTAL_VIDEO_EXTENSIONS = [
+    TOTAL_VIDEO_EXTENSIONS: ClassVar[list[str]] = [
         ".webm",
         ".mkv",
         ".vob",
@@ -159,7 +160,7 @@ class UploadConstants:
         ".f4a",
     ]
 
-    TOTAL_DOCUMENT_EXTENSIONS = [
+    TOTAL_DOCUMENT_EXTENSIONS: ClassVar[list[str]] = [
         ".doc",
         ".docx",
         ".xls",
@@ -190,7 +191,7 @@ class UploadConstants:
         ".log",
     ]
 
-    TOTAL_AUDIO_EXTENSIONS = [
+    TOTAL_AUDIO_EXTENSIONS: ClassVar[list[str]] = [
         ".mp3",
         ".wav",
         ".aac",

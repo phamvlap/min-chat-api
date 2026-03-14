@@ -1,4 +1,4 @@
-from typing import List
+from collections.abc import Iterable
 
 from django.db import IntegrityError, models
 from django.utils import timezone
@@ -43,15 +43,15 @@ class HealthCheckAPIView(RetrieveAPIView):
 
 
 class BaseListAPIView(ListModelMixin, GenericAPIView):
-    model: type[models.Model]
+    model: type[models.Model] | None
     action: str
     filter_backends = [
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
     ]
-    pagination_class = ItemIndexPagination
-    ordering_fields: List[str] | str = "__all__"
+    pagination_class: type[ItemIndexPagination] | None = ItemIndexPagination
+    ordering_fields: Iterable[str] | str = "__all__"
 
     def get(self, request, *args, **kwargs):
         self.action = ViewAction.LIST
@@ -62,12 +62,14 @@ class BaseListAPIView(ListModelMixin, GenericAPIView):
         if self.request.query_params.get("no_pagination", "") == "true":
             self.pagination_class = None
 
-        results = self.model.objects.filter(deleted_at=None).order_by("-created_at")
-        return results
+        if self.model is None:
+            raise APIException(detail="Model is not defined for this view.")
+
+        return self.model._default_manager.filter(deleted_at=None).order_by("-created_at")
 
 
 class BaseCreateAPIView(CreateAPIView):
-    model: type[models.Model]
+    model: type[models.Model] | None
     action: str
 
     def post(self, request, *args, **kwargs):
@@ -75,14 +77,17 @@ class BaseCreateAPIView(CreateAPIView):
             self.action = ViewAction.CREATE
             return self.create(request, *args, **kwargs)
         except IntegrityError as exc:
-            raise APIException(detail=exc)
+            raise APIException(detail=str(exc)) from exc
 
     def perform_create(self, serializer):
+        if self.model is None:
+            raise APIException(detail="Model is not defined for this view.")
+
         serializer.save(created_at=timezone.now(), created_by=self.request.user.id)
 
 
 class BaseRetrieveAPIView(RetrieveAPIView):
-    model: type[models.Model]
+    model: type[models.Model] | None
     action: str
 
     def get(self, request, *args, **kwargs):
@@ -90,11 +95,14 @@ class BaseRetrieveAPIView(RetrieveAPIView):
         return self.retrieve(request, *args, **kwargs)
 
     def get_queryset(self):
-        return self.model.objects.filter(deleted_at=None)
+        if self.model is None:
+            raise APIException(detail="Model is not defined for this view.")
+
+        return self.model._default_manager.filter(deleted_at=None)
 
 
 class BaseUpdateAPIView(UpdateAPIView):
-    model: type[models.Model]
+    model: type[models.Model] | None
     action: str
 
     def put(self, request, *args, **kwargs):
@@ -102,20 +110,23 @@ class BaseUpdateAPIView(UpdateAPIView):
             self.action = ViewAction.UPDATE
             return self.update(request, *args, **kwargs)
         except IntegrityError as exc:
-            raise APIException(detail=exc)
+            raise APIException(detail=str(exc)) from exc
 
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
 
     def get_queryset(self):
-        return self.model.objects.filter(deleted_at=None)
+        if self.model is None:
+            raise APIException(detail="Model is not defined for this view.")
+
+        return self.model._default_manager.filter(deleted_at=None)
 
     def perform_update(self, serializer):
         serializer.save(modified_at=timezone.now(), modified_by=self.request.user.id)
 
 
 class BaseDestroyAPIView(DestroyAPIView):
-    model: type[models.Model]
+    model: type[models.Model] | None
     action: str
 
     def delete(self, request, *args, **kwargs):

@@ -8,13 +8,13 @@ def extract_serializer_error(error: Any) -> tuple[str, str]:
         return str(error.code), str(error)
 
     if isinstance(error, (list, tuple)) and error:
-        for error in error:
-            code, message = extract_serializer_error(error)
+        for err in error:
+            code, message = extract_serializer_error(err)
             if message:
                 return code, message
 
     if isinstance(error, dict):
-        for key, value in error.items():
+        for _, value in error.items():
             code, message = extract_serializer_error(value)
             if message:
                 return code, message

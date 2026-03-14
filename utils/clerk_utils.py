@@ -8,7 +8,7 @@ from base.decorators import retry
 
 @lru_cache(maxsize=1)
 def get_jwks_client():
-    return jwt.PyJWKClient(settings.CLERK_JWKS_URL)
+    return jwt.PyJWKClient(str(settings.CLERK_JWKS_URL))
 
 
 class ClerkUtils:
@@ -22,11 +22,9 @@ class ClerkUtils:
         signing_key: str = jwks_client.get_signing_key_from_jwt(token).key
 
         # Decode and verify the token
-        claims = jwt.decode(
+        return jwt.decode(
             token,
             signing_key,
             algorithms=[unverified_header["alg"]],
             issuer=settings.CLERK_ISSUER,
         )
-
-        return claims

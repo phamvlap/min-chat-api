@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("media", "0001_initial"),
         ("user", "0002_alter_user_options_rename_is_deleted_user_is_user_and_more"),

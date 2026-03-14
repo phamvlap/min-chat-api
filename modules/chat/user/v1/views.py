@@ -1,3 +1,5 @@
+from typing import cast
+
 from django.db.models import Count, IntegerField, OuterRef, Prefetch, QuerySet, Subquery, Value
 from django.db.models.functions import Coalesce
 from rest_framework import status
@@ -31,7 +33,7 @@ class ListConversationAPIView(BaseListAPIView):
     search_fields = ("title",)
 
     def get_queryset(self):
-        user: User = self.request.user
+        user: User = cast(User, self.request.user)
 
         # Subquery to count unread messages for each conversation
         unread_message_count_query: QuerySet = (
@@ -83,7 +85,7 @@ class RetrieveConversationAPIView(BaseRetrieveAPIView):
     lookup_url_kwarg = "conversation_id"
 
     def get_queryset(self):
-        user: User = self.request.user
+        user: User = cast(User, self.request.user)
 
         # Subquery to count unread messages for each conversation
         unread_message_count_query: QuerySet = (
@@ -137,7 +139,7 @@ class ListMessageAPIView(BaseListAPIView):
     filterset_class = ListMessageFilter
 
     def get_queryset(self):
-        user: User = self.request.user
+        user: User = cast(User, self.request.user)
         conversation_id = self.kwargs.get("conversation_id")
 
         return (
@@ -168,7 +170,7 @@ class ReadMessageAPIView(BaseUpdateAPIView):
         read_before = serializer.validated_data.get("read_before")
 
         # Get the current user and conversation ID from URL
-        user: User = self.request.user
+        user: User = cast(User, self.request.user)
         conversation_id = self.kwargs.get("conversation_id")
 
         # Update message statuses of messages that are before the read_before timestamp to READ

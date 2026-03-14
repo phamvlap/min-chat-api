@@ -19,8 +19,12 @@ class CreateDirectConversationSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         # Get the requesting user and the destination user
-        user: User = self.context.get("view").request.user
+        view = self.context.get("view")
+        user: User | None = view.request.user if view and view.request else None
         destination_user: User = attrs.pop("destination_user_id")
+
+        if not user:
+            raise serializers.ValidationError("Authentication credentials were not provided.")
 
         # Prevent users from creating a conversation with themselves
         if user.id == destination_user.id:

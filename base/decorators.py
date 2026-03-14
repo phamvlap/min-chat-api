@@ -1,6 +1,8 @@
 import functools
 import time
 
+from .exceptions import RetryException
+
 
 # Retry decorator
 def retry(
@@ -25,7 +27,10 @@ def retry(
                     time.sleep(current_delay)
                     current_delay *= backoff
 
-            raise last_exception
+            if last_exception:
+                raise last_exception
+
+            raise RetryException("An unexpected error occurred in the retry mechanism.")
 
         return wrapper
 

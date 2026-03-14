@@ -39,11 +39,18 @@ class BaseUploadMediaSerializer(serializers.Serializer):
                 """If does not pass the file_type, check what type it is"""
                 detected_file_type: str | None = get_file_type_from_extension(file_extension)
 
+                if detected_file_type:
+                    raise ValidationError(
+                        ErrorTemplate.UploadError.invalid_file_extension(
+                            valid_file_extension_map.get(
+                                detected_file_type, UploadConstants.VALID_FILE_EXTENSIONS
+                            )
+                        )
+                    )
+
                 raise ValidationError(
                     ErrorTemplate.UploadError.invalid_file_extension(
-                        valid_file_extension_map.get(
-                            detected_file_type, UploadConstants.VALID_FILE_EXTENSIONS
-                        )
+                        UploadConstants.VALID_FILE_EXTENSIONS
                     )
                 )
         return file_extension
@@ -88,7 +95,10 @@ class GetPresignedURLSerializer(serializers.Serializer):
     key = serializers.CharField()
 
     def create(self, validated_data):
-        media: Media = Media.objects.filter(key=validated_data["key"], deleted_at=None).first()
+        media: Media | None = Media.objects.filter(
+            key=validated_data["key"],
+            deleted_at=None,
+        ).first()
         if not media:
             raise ValidationError("Media with the given key does not exist.")
 
@@ -141,7 +151,10 @@ class GetPresignedURLForMultipartUploadSerializer(serializers.Serializer):
     part_no = serializers.IntegerField()
 
     def create(self, validated_data):
-        media: Media = Media.objects.filter(key=validated_data["key"], deleted_at=None).first()
+        media: Media | None = Media.objects.filter(
+            key=validated_data["key"],
+            deleted_at=None,
+        ).first()
         if not media:
             raise ValidationError("Media with the given key does not exist.")
 
@@ -171,7 +184,10 @@ class CompleteMultipartUploadSerializer(serializers.Serializer):
     parts = MultipartUploadChunkSerializer(many=True)
 
     def create(self, validated_data):
-        media: Media = Media.objects.filter(key=validated_data["key"], deleted_at=None).first()
+        media: Media | None = Media.objects.filter(
+            key=validated_data["key"],
+            deleted_at=None,
+        ).first()
         if not media:
             raise ValidationError("Media with the given key does not exist.")
 

@@ -6,10 +6,10 @@ from base.views import BaseCreateAPIView, BaseListAPIView, BaseUpdateAPIView
 from modules.friend_request.models import FriendRequest
 
 from .serializers import (
+    AcceptOrRejectFriendRequestSerializer,
     CancelFriendRequestSerializer,
     CreateFriendRequestSerializer,
     ListFriendRequestSerializer,
-    AcceptOrRejectFriendRequestSerializer,
 )
 
 

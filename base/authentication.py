@@ -59,7 +59,7 @@ class BaseClerkAuthentication:
         unsafe_metadata: dict = clerk_user.get("unsafe_metadata", {})
 
         # Get or create the user in the database
-        user, created = User.objects.get_or_create(
+        user, _ = User.objects.get_or_create(
             clerk_user_id=user_id,
             deleted_at=None,
             defaults={
@@ -100,7 +100,7 @@ class ClerkAuthentication(BaseAuthentication, BaseClerkAuthentication):
         try:
             user_data: dict = ClerkUtils.verify_token(token)
         except Exception as e:
-            raise AuthenticationFailed(f"Invalid Clerk token. Error: {str(e)}")
+            raise AuthenticationFailed(f"Invalid Clerk token. Error: {e!s}") from e
 
         # Get user ID from the token claims
         user_id: str | None = user_data.get("sub")

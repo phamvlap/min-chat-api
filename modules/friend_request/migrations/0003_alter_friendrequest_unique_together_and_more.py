@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("friend_request", "0002_alter_friendrequest_status"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
@@ -22,21 +21,15 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="friendrequest",
-            index=models.Index(
-                fields=["deleted_at"], name="friend_requ_deleted_07d40c_idx"
-            ),
+            index=models.Index(fields=["deleted_at"], name="friend_requ_deleted_07d40c_idx"),
         ),
         migrations.AddIndex(
             model_name="friendrequest",
-            index=models.Index(
-                fields=["id", "deleted_at"], name="friend_requ_id_751d2f_idx"
-            ),
+            index=models.Index(fields=["id", "deleted_at"], name="friend_requ_id_751d2f_idx"),
         ),
         migrations.AddIndex(
             model_name="friendrequest",
-            index=models.Index(
-                fields=["is_active"], name="friend_requ_is_acti_89d725_idx"
-            ),
+            index=models.Index(fields=["is_active"], name="friend_requ_is_acti_89d725_idx"),
         ),
         migrations.AddIndex(
             model_name="friendrequest",
@@ -47,14 +40,10 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="friendrequest",
-            index=models.Index(
-                fields=["created_at"], name="friend_requ_created_d8a5e5_idx"
-            ),
+            index=models.Index(fields=["created_at"], name="friend_requ_created_d8a5e5_idx"),
         ),
         migrations.AddIndex(
             model_name="friendrequest",
-            index=models.Index(
-                fields=["-created_at"], name="friend_requ_created_9e7c5d_idx"
-            ),
+            index=models.Index(fields=["-created_at"], name="friend_requ_created_9e7c5d_idx"),
         ),
     ]

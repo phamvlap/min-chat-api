@@ -15,14 +15,11 @@ class ChatConsumer(BaseWebsocketConsumer):
     permission_classes = (IsMemberOfConversation,)
 
     def __init__(self, *args, **kwargs):
-        from modules.chat.models import Conversation
-        from modules.user.models import User
-
         super().__init__(*args, **kwargs)
 
-        self.conversation_name: str | None = None
-        self.user: User | None = None
-        self.conversation: Conversation | None = None
+        self.conversation_name = None
+        self.user = None
+        self.conversation = None
 
     def connect(self):
         from modules.chat.models import Conversation
@@ -59,11 +56,14 @@ class ChatConsumer(BaseWebsocketConsumer):
         self.accept()
 
     def disconnect(self, code):
-        async_to_sync(self.channel_layer.group_discard)(self.conversation_name, self.channel_name)
+        if self.conversation_name:
+            async_to_sync(self.channel_layer.group_discard)(
+                self.conversation_name, self.channel_name
+            )
 
     def receive(self, text_data: str | None = None, bytes_data: bytes | None = None):
         data: dict = json.loads(text_data) if text_data else {}
-        event_type: str = data.get("type")
+        event_type: str = data["type"]
 
         # Dispatch the client event to the appropriate handler
         self._dispatch_client_event(event_type, data)
@@ -73,11 +73,22 @@ class ChatConsumer(BaseWebsocketConsumer):
 
         from .serializers import SendMessageSerializer
 
+        if not self.conversation or not self.conversation_name:
+            self.send_error(code="conversation_not_found", message="Conversation not found.")
+            return
+
+        if not self.user:
+            self.send_error(
+                code="authentication_required",
+                message="Authentication credentials were not provided.",
+            )
+            return
+
         # Validate the incoming data
         serializer = SendMessageSerializer(data=data)
         if not serializer.is_valid():
-            code, message = extract_serializer_error(serializer.errors)
-            self.send_error(code=code, message=message)
+            err_code, err_msg = extract_serializer_error(serializer.errors)
+            self.send_error(code=err_code, message=err_msg)
             return
 
         # Prepare message data
@@ -147,8 +158,8 @@ class ChatConsumer(BaseWebsocketConsumer):
         payload_message_serializer = BuildPayloadMessageSerializer(data=event)
 
         if not payload_message_serializer.is_valid():
-            code, message = extract_serializer_error(payload_message_serializer.errors)
-            self.send_error(code=code, message=message)
+            err_code, err_msg = extract_serializer_error(payload_message_serializer.errors)
+            self.send_error(code=err_code, message=err_msg)
             return
 
         # Handle new message event from server

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Literal
+from typing import Any, Literal
 
 import boto3
 from botocore.config import Config
@@ -33,7 +33,7 @@ class S3Service:
         self,
         bucket_name: str,
         method: Literal["get", "put"],
-        params: Dict[str, str | int],
+        params: dict[str, str | int],
         expires_in: int,
     ) -> str:
         """Generate a presigned S3 URL that can be used to perform an action.
@@ -117,8 +117,8 @@ class S3Service:
         bucket_name: str,
         key: str,
         upload_id: str,
-        parts: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        parts: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Complete a multipart upload.
 
         Args:
@@ -130,11 +130,9 @@ class S3Service:
             The response after completing the multipart upload.
         """
 
-        response = self.s3_client.complete_multipart_upload(
+        return self.s3_client.complete_multipart_upload(
             Bucket=bucket_name,
             Key=key,
             MultipartUpload={"Parts": parts},
             UploadId=upload_id,
         )
-
-        return response

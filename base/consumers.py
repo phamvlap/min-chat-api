@@ -7,10 +7,7 @@ class BaseWebsocketConsumer(WebsocketConsumer):
     permission_classes: tuple = ()
 
     def check_permissions(self, scope) -> bool:
-        for permission in self.get_permissions():
-            if not permission.has_permission(scope):
-                return False
-        return True
+        return all(permission.has_permission(scope) for permission in self.get_permissions())
 
     def get_permissions(self):
         return [permission() for permission in self.permission_classes]

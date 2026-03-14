@@ -1,6 +1,6 @@
 import uuid
 
-from django.contrib.auth.models import AbstractUser, UserManager
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
@@ -45,8 +45,6 @@ class AbstractBaseUser(AbstractUser):
 
     deleted_at = models.DateTimeField(default=None, null=True)
     deleted_by = models.UUIDField(null=True)
-
-    objects = UserManager()
 
     class Meta:
         abstract = True

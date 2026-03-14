@@ -20,8 +20,11 @@ class CreateFriendRequestSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         view = self.context.get("view")
-        user: User = view.request.user
+        user: User | None = view.request.user if view and view.request else None
         friend: User = attrs.pop("friend_id")
+
+        if not user:
+            raise serializers.ValidationError("Authentication credentials were not provided.")
 
         if user.id == friend.id:
             raise serializers.ValidationError("You cannot send a friend request to yourself.")
@@ -103,17 +106,17 @@ class AcceptOrRejectFriendRequestSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         view = self.context.get("view")
-        action = view.kwargs.get("action")
+        action: str = view.kwargs.get("action") if view and view.kwargs else ""
 
         action_to_status_map = {
-            FriendRequestAction.ACCEPT: FriendRequest.Status.ACCEPTED,
-            FriendRequestAction.REJECT: FriendRequest.Status.REJECTED,
+            FriendRequestAction.ACCEPT.value: FriendRequest.Status.ACCEPTED,
+            FriendRequestAction.REJECT.value: FriendRequest.Status.REJECTED,
         }
 
         try:
             attrs["status"] = action_to_status_map[action]
-        except KeyError:
-            raise serializers.ValidationError("Invalid action for friend request.")
+        except KeyError as err:
+            raise serializers.ValidationError("Invalid action for friend request.") from err
 
         attrs["responded_at"] = timezone.now()
 

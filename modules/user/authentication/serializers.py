@@ -65,7 +65,7 @@ class UpdateUserSerializer(serializers.ModelSerializer):
         user_caching_service = UserCachingService()
 
         # Generate cache key for the user
-        cache_key: str = user_caching_service.generate_user_cache_key(user.clerk_user_id)
+        cache_key: str = user_caching_service.generate_user_cache_key(str(user.clerk_user_id))
         user_caching_service.delete(cache_key)
 
         return RetrieveUserSerializer(user).data

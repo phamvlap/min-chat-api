@@ -50,7 +50,8 @@ INSTALLED_APPS = [
     "corsheaders",
     "cacheops",
     "channels",
-] + MODULES_INSTALLED_APPS
+    *MODULES_INSTALLED_APPS,
+]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

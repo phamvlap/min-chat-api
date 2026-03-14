@@ -1,5 +1,5 @@
 def main():
-    print("Hello from django-websocket-api!")
+    pass
 
 
 if __name__ == "__main__":
