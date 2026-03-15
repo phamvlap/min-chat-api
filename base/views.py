@@ -80,9 +80,6 @@ class BaseCreateAPIView(CreateAPIView):
             raise APIException(detail=str(exc)) from exc
 
     def perform_create(self, serializer):
-        if self.model is None:
-            raise APIException(detail="Model is not defined for this view.")
-
         serializer.save(created_at=timezone.now(), created_by=self.request.user.id)
 
 
