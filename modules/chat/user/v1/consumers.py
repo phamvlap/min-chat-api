@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from asgiref.sync import async_to_sync
 from django.db.models import QuerySet
@@ -134,36 +135,47 @@ class ChatConsumer(BaseWebsocketConsumer):
             deleted_at=None,
         ).update(last_visible_message=message)
 
-        # Broadcast the new message to all group members
-        async_to_sync(self.channel_layer.group_send)(
-            self.conversation_name,
-            {
-                "type": WebSocket.ServerEvent.Message.MESSAGE,
-                "conversation_id": str(self.conversation.id),
-                "sender_id": str(self.user.id),
-                "sender_username": self.user.username,
-                "message_id": str(message.id),
-                "message": message.message,
-                "message_type": message.message_type,
-                "created_at": message.created_at.isoformat(),
+        # Build the message data to be sent to clients
+        sender_avatar: dict[str, Any] | None = None
+
+        if self.user.avatar:
+            sender_avatar = {
+                "id": str(self.user.avatar.id),
+                "key": self.user.avatar.key,
+                "key_type": self.user.avatar.key_type,
+                "original_name": self.user.avatar.original_name,
+                "file_size": self.user.avatar.file_size,
+                "public": self.user.avatar.public,
+                "public_url": self.user.avatar.public_url,
+            }
+
+        client_message_payload: dict[str, Any] = {
+            "type": WebSocket.ServerEvent.Message.MESSAGE,
+            "conversation_id": str(self.conversation.id),
+            "sender": {
+                "id": str(self.user.id),
+                "username": self.user.username,
+                "first_name": self.user.first_name,
+                "last_name": self.user.last_name,
+                "email": self.user.email,
+                "is_user": bool(self.user.is_user),
+                "avatar": sender_avatar,
             },
-        )
+            "message_id": str(message.id),
+            "message": message.message,
+            "message_type": message.message_type,
+            "created_at": message.created_at.isoformat(),
+        }
+
+        # Broadcast the new message to all group members
+        async_to_sync(self.channel_layer.group_send)(self.conversation_name, client_message_payload)
 
     def chat_message(self, event: dict):
         self._dispatch_server_event(event)
 
     def handle_new_message(self, event: dict):
-        from .serializers import BuildPayloadMessageSerializer
-
-        payload_message_serializer = BuildPayloadMessageSerializer(data=event)
-
-        if not payload_message_serializer.is_valid():
-            err_code, err_msg = extract_serializer_error(payload_message_serializer.errors)
-            self.send_error(code=err_code, message=err_msg)
-            return
-
         # Handle new message event from server
-        self.send(text_data=json.dumps(payload_message_serializer.data))
+        self.send(text_data=json.dumps(event))
 
     def _dispatch_client_event(self, event_type: str, data: dict) -> None:
         self.dispatch_event(

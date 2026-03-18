@@ -182,14 +182,3 @@ class SendMessageSerializer(serializers.Serializer):
         choices=Message.Types.choices,
         default=Message.Types.TEXT,
     )
-
-
-class BuildPayloadMessageSerializer(serializers.Serializer):
-    type = serializers.CharField()
-    conversation_id = serializers.UUIDField()
-    sender_id = serializers.UUIDField()
-    sender_username = serializers.CharField()
-    message_id = serializers.UUIDField()
-    message = serializers.CharField()
-    message_type = serializers.CharField()
-    created_at = serializers.DateTimeField()
