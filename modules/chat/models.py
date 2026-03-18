@@ -67,7 +67,7 @@ class ConversationMember(BaseModel):
     muted_until = models.DateTimeField(null=True, blank=True, default=None)
 
     # Timestamp of the last read message
-    last_read_at = models.DateTimeField(null=True, blank=True, default=None)
+    last_read_at = models.DateTimeField(auto_now=False, auto_now_add=True)
 
     # Last visible message for the user
     last_visible_message = models.ForeignKey(

@@ -95,10 +95,8 @@ class RetrieveConversationAPIView(BaseRetrieveAPIView):
                 message__conversation=OuterRef("id"),
                 created_at__gt=OuterRef("conversation_member__last_read_at"),
             )
-            .exclude(
-                status=MessageStatus.StatusChoices.READ,
-                message__sender=user,
-            )
+            .exclude(message__sender=user)
+            .exclude(status=MessageStatus.StatusChoices.READ)
             .values("message__conversation")
             .annotate(count=Count("id"))
             .values("count")[:1]
