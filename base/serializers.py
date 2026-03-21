@@ -3,6 +3,7 @@ from rest_framework.exceptions import ValidationError
 
 from base.constants import TimeConstants, UploadConstants
 from modules.media.models import Media
+from modules.media.serializers import NestedMediaInRetrieveSerializer
 from services.s3_service import S3Service
 from templates.error_templates import ErrorTemplate
 from utils.file_utils import get_file_extension, get_file_type_from_extension
@@ -88,7 +89,9 @@ class CreatePresignedURLSerializer(BaseUploadMediaSerializer):
             file_size=validated_data["file_size"],
             public=validated_data["public"],
         )
-        return {"presigned_url": presigned_url, "key": key, "id": media.id}
+
+        media_data = NestedMediaInRetrieveSerializer(media).data
+        return {"presigned_url": presigned_url, "media": media_data}
 
 
 class GetPresignedURLSerializer(serializers.Serializer):
@@ -204,9 +207,10 @@ class CompleteMultipartUploadSerializer(serializers.Serializer):
         media.is_active = True
         media.save(update_fields=["is_active"])
 
+        media_data = NestedMediaInRetrieveSerializer(media).data
+
         return {
-            "id": media.id,
-            "key": media.key,
+            "media": media_data,
             "message": "Multipart upload completed successfully.",
         }
 
