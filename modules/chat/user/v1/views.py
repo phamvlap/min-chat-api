@@ -1,6 +1,18 @@
 from typing import cast
 
-from django.db.models import Count, IntegerField, OuterRef, Prefetch, QuerySet, Subquery, Value
+from django.db.models import (
+    Case,
+    CharField,
+    Count,
+    Exists,
+    IntegerField,
+    OuterRef,
+    Prefetch,
+    QuerySet,
+    Subquery,
+    Value,
+    When,
+)
 from django.db.models.functions import Coalesce
 from rest_framework import status
 from rest_framework.response import Response
@@ -147,6 +159,37 @@ class ListMessageAPIView(BaseListAPIView):
                 conversation__id=conversation_id,
                 conversation__conversation_member__user=user,
                 conversation__conversation_member__deleted_at=None,
+            )
+            .annotate(
+                status=Case(
+                    When(
+                        sender=user,
+                        then=Case(
+                            When(
+                                Exists(
+                                    MessageStatus.objects.filter(
+                                        message=OuterRef("id"),
+                                        status=MessageStatus.StatusChoices.READ,
+                                    ).exclude(user=user)
+                                ),
+                                then=Value(MessageStatus.StatusChoices.READ),
+                            ),
+                            When(
+                                Exists(
+                                    MessageStatus.objects.filter(
+                                        message=OuterRef("id"),
+                                        status=MessageStatus.StatusChoices.DELIVERED,
+                                    ).exclude(user=user)
+                                ),
+                                then=Value(MessageStatus.StatusChoices.DELIVERED),
+                            ),
+                            default=Value(MessageStatus.StatusChoices.SENT),
+                            output_field=CharField(),
+                        ),
+                    ),
+                    default=Value(MessageStatus.StatusChoices.READ),
+                    output_field=CharField(),
+                )
             )
             .select_related("sender__avatar", "replied_to__sender__avatar")
             .order_by("-created_at")
