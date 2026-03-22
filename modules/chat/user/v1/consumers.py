@@ -18,7 +18,10 @@ class ChatConsumer(BaseWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.conversation_name = None
+        # Groups in which the channel will be added for broadcasting messages
+        self.conversation_group_name = None
+        self.user_group_name = None
+
         self.user = None
         self.conversation = None
 
@@ -48,19 +51,28 @@ class ChatConsumer(BaseWebsocketConsumer):
             return
 
         # Set conversation name and conversation object
-        self.conversation_name = f"conversation.{conversation_id}"
+        self.conversation_group_name = f"conversation.{conversation_id}"
         self.conversation = conversation
 
-        # Add the channel to the conversation group
-        async_to_sync(self.channel_layer.group_add)(self.conversation_name, self.channel_name)
+        # Add the channel to the conversation group for broadcasting messages
+        async_to_sync(self.channel_layer.group_add)(self.conversation_group_name, self.channel_name)
 
+        # Add the channel to the user group for sending user-specific events (e.g., message delivery receipts)
+        self.user_group_name = f"user.{self.user.id}"
+        async_to_sync(self.channel_layer.group_add)(self.user_group_name, self.channel_name)
+
+        # Accept the WebSocket connection
         self.accept()
 
     def disconnect(self, code):
-        if self.conversation_name:
+        if self.conversation_group_name:
             async_to_sync(self.channel_layer.group_discard)(
-                self.conversation_name, self.channel_name
+                self.conversation_group_name,
+                self.channel_name,
             )
+
+        if self.user_group_name:
+            async_to_sync(self.channel_layer.group_discard)(self.user_group_name, self.channel_name)
 
     def receive(self, text_data: str | None = None, bytes_data: bytes | None = None):
         data: dict = json.loads(text_data) if text_data else {}
@@ -74,11 +86,11 @@ class ChatConsumer(BaseWebsocketConsumer):
 
         from .serializers import SendMessageSerializer
 
-        if not self.conversation or not self.conversation_name:
+        if not self.conversation or not self.conversation_group_name:
             self.send_error(code="conversation_not_found", message="Conversation not found.")
             return
 
-        if not self.user:
+        if not self.user or not self.user_group_name:
             self.send_error(
                 code="authentication_required",
                 message="Authentication credentials were not provided.",
@@ -168,13 +180,82 @@ class ChatConsumer(BaseWebsocketConsumer):
         }
 
         # Broadcast the new message to all group members
-        async_to_sync(self.channel_layer.group_send)(self.conversation_name, client_message_payload)
+        async_to_sync(self.channel_layer.group_send)(
+            self.conversation_group_name,
+            client_message_payload,
+        )
+
+    def handle_message_delivered(self, data: dict):
+        from modules.chat.models import MessageStatus
+
+        from .serializers import DeliverMessageSerializer
+
+        if not self.conversation or not self.conversation_group_name:
+            self.send_error(code="conversation_not_found", message="Conversation not found.")
+            return
+
+        if not self.user or not self.user_group_name:
+            self.send_error(
+                code="authentication_required",
+                message="Authentication credentials were not provided.",
+            )
+            return
+
+        # Validate the incoming data
+        serializer = DeliverMessageSerializer(data=data)
+        if not serializer.is_valid():
+            err_code, err_msg = extract_serializer_error(serializer.errors)
+            self.send_error(code=err_code, message=err_msg)
+            return
+
+        validated_data = serializer.validated_data
+
+        delivered_before = validated_data.get("delivered_before")
+
+        # Get all message statuses for the current user in the conversation that are still marked as SENT
+        # and were created before the specified timestamp
+        messages_to_update_delivery = MessageStatus.objects.filter(
+            user=self.user,
+            message__conversation=self.conversation,
+            message__conversation__deleted_at=None,
+            message__deleted_at=None,
+            message__created_at__lte=delivered_before,
+            status=MessageStatus.StatusChoices.SENT,
+            deleted_at=None,
+        ).select_related("message__sender")
+
+        # Update message statuses to delivered for messages created before the specified timestamp
+        messages_to_update_delivery.update(status=MessageStatus.StatusChoices.DELIVERED)
+
+        # Get all messages in the conversation and annotate them with the delivery status for the current user
+        messages = [msg_status.message for msg_status in messages_to_update_delivery]
+
+        # Get unique sender IDs from the messages to send delivery notifications to the respective senders
+        sender_ids = {msg.sender.id for msg in messages}
+
+        # Send message delivered notifications to the respective senders for the messages that were marked as delivered
+        for sender_id in sender_ids:
+            async_to_sync(self.channel_layer.group_send)(
+                f"user.{sender_id}",
+                {
+                    "type": WebSocket.ServerEvent.Message.MESSAGE_DELIVERED,
+                    "conversation_id": str(self.conversation.id),
+                    "delivered_before": delivered_before.isoformat(),
+                },
+            )
 
     def chat_message(self, event: dict):
         self._dispatch_server_event(event)
 
+    def chat_message_delivered(self, event: dict):
+        self._dispatch_server_event(event)
+
     def handle_new_message(self, event: dict):
         # Handle new message event from server
+        self.send(text_data=json.dumps(event))
+
+    def notify_sender_message_delivered(self, event: dict):
+        # Send message delivered notification to the sender
         self.send(text_data=json.dumps(event))
 
     def _dispatch_client_event(self, event_type: str, data: dict) -> None:

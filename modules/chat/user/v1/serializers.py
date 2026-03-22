@@ -183,3 +183,7 @@ class SendMessageSerializer(serializers.Serializer):
         choices=Message.Types.choices,
         default=Message.Types.TEXT,
     )
+
+
+class DeliverMessageSerializer(serializers.Serializer):
+    delivered_before = serializers.DateTimeField()

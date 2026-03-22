@@ -24,10 +24,12 @@ class WebSocket:
     class ClientEvent:
         class Message(StrEnum):
             SEND_MESSAGE = "send_message"
+            MESSAGE_DELIVERED = "message_delivered"
 
     class ServerEvent:
         class Message(StrEnum):
             MESSAGE = "chat.message"
+            MESSAGE_DELIVERED = "chat.message_delivered"
 
 
 class UploadConstants:
