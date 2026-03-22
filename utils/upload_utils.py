@@ -1,13 +1,28 @@
+import os
 import uuid
 
 from django.conf import settings
+from django.utils.text import slugify
+
+
+def normalize_file_name(file_name: str) -> str:
+    """Normalize file name by slugifying the name and preserving the extension"""
+
+    if file_name.startswith(".") and file_name.count(".") == 1:
+        # Handle hidden files (e.g., .env)
+        return file_name
+
+    name, ext = os.path.splitext(file_name)
+    return f"{slugify(name)}{ext.lower()}"
 
 
 def generate_s3_key(file_type: str, file_name: str) -> str:
     """Generate S3 object key"""
 
-    unique_identifier = str(uuid.uuid4()).replace("-", "")
-    return f"{file_type.lower()}/{unique_identifier}-{file_name}"
+    new_file_name = normalize_file_name(file_name)
+    unique_identifier = uuid.uuid4().hex
+
+    return f"{file_type.lower()}/{unique_identifier}-{new_file_name}"
 
 
 def get_bucket_name(*, public: bool = True) -> str:
