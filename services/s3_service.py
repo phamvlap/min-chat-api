@@ -136,3 +136,17 @@ class S3Service:
             MultipartUpload={"Parts": parts},
             UploadId=upload_id,
         )
+
+    def list_objects(self, bucket_name: str, *, prefix: str = "") -> list[dict[str, Any]]:
+        """
+        List objects in an S3 bucket with an optional prefix.
+
+        Args:
+            bucket_name: The name of the S3 bucket.
+            prefix: The prefix to filter objects by (optional).
+
+        Returns:
+            A list of dictionaries containing object information.
+        """
+        response = self.s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+        return response.get("Contents", [])
