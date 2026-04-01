@@ -176,7 +176,7 @@ class ChatConsumer(BaseWebsocketConsumer):
             "message_id": str(message.id),
             "message": message.message,
             "message_type": message.message_type,
-            "created_at": message.created_at.isoformat(),
+            "created_at": message.created_at,
         }
 
         # Broadcast the new message to all group members
@@ -240,7 +240,7 @@ class ChatConsumer(BaseWebsocketConsumer):
                 {
                     "type": WebSocket.ServerEvent.Message.MESSAGE_DELIVERED,
                     "conversation_id": str(self.conversation.id),
-                    "delivered_before": delivered_before.isoformat(),
+                    "delivered_before": delivered_before,
                 },
             )
 
