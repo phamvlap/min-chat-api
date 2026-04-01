@@ -224,14 +224,14 @@ class ChatConsumer(BaseWebsocketConsumer):
             deleted_at=None,
         ).select_related("message__sender")
 
-        # Update message statuses to delivered for messages created before the specified timestamp
-        messages_to_update_delivery.update(status=MessageStatus.StatusChoices.DELIVERED)
-
         # Get all messages in the conversation and annotate them with the delivery status for the current user
         messages = [msg_status.message for msg_status in messages_to_update_delivery]
 
         # Get unique sender IDs from the messages to send delivery notifications to the respective senders
         sender_ids = {msg.sender.id for msg in messages}
+
+        # Update message statuses to delivered for messages created before the specified timestamp
+        messages_to_update_delivery.update(status=MessageStatus.StatusChoices.DELIVERED)
 
         # Send message delivered notifications to the respective senders for the messages that were marked as delivered
         for sender_id in sender_ids:
