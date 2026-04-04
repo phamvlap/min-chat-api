@@ -1,8 +1,8 @@
 from base.permission import IsUser
-from base.views import BaseListAPIView
+from base.views import BaseListAPIView, BaseRetrieveAPIView
 from modules.friend.models import Friend
 
-from .serializers import ListFriendSerializer
+from .serializers import ListFriendSerializer, RetrieveFriendSerializer
 
 
 class ListFriendAPIView(BaseListAPIView):
@@ -24,7 +24,23 @@ class ListFriendAPIView(BaseListAPIView):
             .get_queryset()
             .filter(
                 user=self.request.user,
-                deleted_at=None,
+            )
+            .select_related("friend__avatar")
+        )
+
+
+class RetrieveFriendAPIView(BaseRetrieveAPIView):
+    permission_classes = (IsUser,)
+    model = Friend
+    serializer_class = RetrieveFriendSerializer
+    lookup_url_kwarg = "friend_id"
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                user=self.request.user,
             )
             .select_related("friend__avatar")
         )

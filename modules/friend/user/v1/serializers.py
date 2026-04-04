@@ -11,3 +11,12 @@ class ListFriendSerializer(serializers.ModelSerializer):
         model = Friend
         fields = ("id", "friend", "created_at")
         read_only_fields = fields
+
+
+class RetrieveFriendSerializer(serializers.ModelSerializer):
+    friend = NestedUserSerializer(read_only=True)
+
+    class Meta:
+        model = Friend
+        fields = ("id", "friend", "created_at")
+        read_only_fields = fields
