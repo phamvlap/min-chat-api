@@ -97,7 +97,12 @@ class Message(BaseModel):
     )
 
     # The user who sent the message
-    sender = models.ForeignKey("user.User", on_delete=models.CASCADE, related_name="sent_messages")
+    sender = models.ForeignKey(
+        "user.User",
+        on_delete=models.CASCADE,
+        related_name="sent_messages",
+        null=True,
+    )
 
     # The content and type of the message
     message = models.TextField(blank=True, null=True, default=None)

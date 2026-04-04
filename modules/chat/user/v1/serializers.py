@@ -1,7 +1,10 @@
+import json
+
 from django.db.models import Count
 from rest_framework import serializers
 
-from modules.chat.models import Conversation, ConversationMember, Message
+from base.constants import ChatConstants
+from modules.chat.models import Conversation, ConversationMember, Message, MessageStatus
 from modules.media.serializers import NestedMediaInRetrieveSerializer
 from modules.user.models import User
 from modules.user.serializers import NestedUserSerializer
@@ -58,7 +61,7 @@ class CreateDirectConversationSerializer(serializers.ModelSerializer):
         conversation: Conversation = super().create(validated_data)
 
         # Add both users as members of the conversation
-        ConversationMember.objects.bulk_create(
+        members = ConversationMember.objects.bulk_create(
             [
                 ConversationMember(
                     conversation=conversation,
@@ -72,6 +75,48 @@ class CreateDirectConversationSerializer(serializers.ModelSerializer):
                 ),
             ]
         )
+
+        # Define the content of the first system message for the conversation
+        first_message_content = {
+            "event": ChatConstants.Conversation.Direct.SystemMessage.ConversationStarted.EVENT_NAME,
+            "content": ChatConstants.Conversation.Direct.SystemMessage.ConversationStarted.MESSAGE.format(
+                recipient_name=destination_user.full_name
+            ),
+        }
+
+        message_data: dict = {
+            "conversation": conversation,
+            "sender": None,
+            "message": json.dumps(first_message_content),
+            "message_type": Message.Types.SYSTEM,
+        }
+
+        # Create the first system message for the conversation
+        message: Message = Message.objects.create(**message_data)
+
+        # Create message status for each member
+        message_statuses: list[MessageStatus] = []
+        for member in members:
+            message_status: MessageStatus = MessageStatus(
+                message=message,
+                user=member.user,
+                status=MessageStatus.StatusChoices.SENT,
+            )
+            message_statuses.append(message_status)
+
+        # Bulk create message statuses
+        MessageStatus.objects.bulk_create(message_statuses)
+
+        # Update the last message in the conversation
+        conversation.last_message = message
+        conversation.last_message_at = message.created_at
+        conversation.save(update_fields=["last_message", "last_message_at"])
+
+        # Update last visible message for each member
+        ConversationMember.objects.filter(
+            conversation=conversation,
+            deleted_at=None,
+        ).update(last_visible_message=message)
 
         return conversation
 

@@ -226,3 +226,12 @@ class TimeConstants:
     ONE_HOUR = 60 * ONE_MINUTE
     ONE_DAY = 24 * ONE_HOUR
     ONE_WEEK = 7 * ONE_DAY
+
+
+class ChatConstants:
+    class Conversation:
+        class Direct:
+            class SystemMessage:
+                class ConversationStarted(StrEnum):
+                    EVENT_NAME = "conversation_started"
+                    MESSAGE = "You have started a conversation with {recipient_name}."

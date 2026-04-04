@@ -23,3 +23,7 @@ class User(AbstractBaseUser):
         default=None,
         related_name="avatar_user",
     )
+
+    @property
+    def full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}".strip()
