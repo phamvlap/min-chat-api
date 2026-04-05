@@ -220,10 +220,20 @@ class ListMessageSerializer(serializers.ModelSerializer):
     sender = NestedUserSerializer(read_only=True)
     replied_to = "self"  # Recursive relationship for nested replies
     status = serializers.CharField(read_only=True)
+    is_pinned = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Message
-        fields = ("id", "sender", "message", "message_type", "created_at", "replied_to", "status")
+        fields = (
+            "id",
+            "sender",
+            "message",
+            "message_type",
+            "created_at",
+            "replied_to",
+            "status",
+            "is_pinned",
+        )
         read_only_fields = fields
 
 

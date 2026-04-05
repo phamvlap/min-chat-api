@@ -199,7 +199,14 @@ class ListMessageAPIView(BaseListAPIView):
                     ),
                     default=Value(MessageStatus.StatusChoices.READ),
                     output_field=CharField(),
-                )
+                ),
+                is_pinned=Exists(
+                    PinnedMessage.objects.filter(
+                        conversation_id=conversation_id,
+                        message=OuterRef("id"),
+                        deleted_at=None,
+                    )
+                ),
             )
             .select_related("sender__avatar", "replied_to__sender__avatar")
             .order_by("-created_at")
