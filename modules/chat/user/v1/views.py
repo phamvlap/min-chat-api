@@ -17,9 +17,16 @@ from django.db.models.functions import Coalesce
 from rest_framework import status
 from rest_framework.response import Response
 
+from base.constants import ViewAction
 from base.permission import IsUser
 from base.views import BaseCreateAPIView, BaseListAPIView, BaseRetrieveAPIView, BaseUpdateAPIView
-from modules.chat.models import Conversation, ConversationMember, Message, MessageStatus
+from modules.chat.models import (
+    Conversation,
+    ConversationMember,
+    Message,
+    MessageStatus,
+    PinnedMessage,
+)
 from modules.user.models import User
 
 from .filters import ListMessageFilter
@@ -27,8 +34,11 @@ from .serializers import (
     CreateDirectConversationSerializer,
     ListConversationSerializer,
     ListMessageSerializer,
+    ListPinnedMessageSerializer,
+    PinMessageSerializer,
     ReadMessageSerializer,
     RetrieveConversationSerializer,
+    UnpinMessageSerializer,
 )
 
 
@@ -234,3 +244,47 @@ class ReadMessageAPIView(BaseUpdateAPIView):
         ).update(last_read_at=read_before)
 
         return Response({"read_count": read_count}, status=status.HTTP_200_OK)
+
+
+class ListPinMessageAPIView(BaseListAPIView, BaseCreateAPIView):
+    permission_classes = (IsUser,)
+    model = PinnedMessage
+    serializer_class = PinMessageSerializer
+    lookup_url_kwarg = "conversation_id"
+    ordering_fields = ("created_at", "message__created_at")
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                conversation_id=self.kwargs.get("conversation_id"),
+                conversation__deleted_at=None,
+            )
+            .select_related("message__sender__avatar")
+        )
+
+    def get_serializer_class(self):
+        if self.action == ViewAction.CREATE:
+            return PinMessageSerializer
+        return ListPinnedMessageSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+
+        # Get the creator IDs from the queryset and fetch the corresponding User objects
+        creator_ids = self.get_queryset().values_list("created_by", flat=True).distinct()
+        creators = User.objects.filter(id__in=creator_ids).select_related("avatar")
+
+        # Create a mapping of creator IDs to User objects and add it to the context
+        mapped_creators = {str(creator.id): creator for creator in creators}
+        context["mapped_creators"] = mapped_creators
+
+        return context
+
+
+class UnpinMessageAPIView(BaseCreateAPIView):
+    permission_classes = (IsUser,)
+    model = PinnedMessage
+    serializer_class = UnpinMessageSerializer
+    lookup_url_kwarg = "conversation_id"

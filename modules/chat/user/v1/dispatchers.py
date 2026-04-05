@@ -8,4 +8,6 @@ CLIENT_EVENT_HANDLERS = {
 SERVER_EVENT_HANDLERS = {
     WebSocket.ServerEvent.Message.MESSAGE: "handle_new_message",
     WebSocket.ServerEvent.Message.MESSAGE_DELIVERED: "notify_sender_message_delivered",
+    WebSocket.ServerEvent.Message.MESSAGE_PINNED: "notify_message_pinned",
+    WebSocket.ServerEvent.Message.MESSAGE_UNPINNED: "notify_message_unpinned",
 }

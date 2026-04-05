@@ -1,13 +1,22 @@
 import json
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.db.models import Count
 from rest_framework import serializers
 
-from base.constants import ChatConstants
-from modules.chat.models import Conversation, ConversationMember, Message, MessageStatus
+from base.constants import ChatConstants, ResponseStatus, WebSocket
+from modules.chat.models import (
+    Conversation,
+    ConversationMember,
+    Message,
+    MessageStatus,
+    PinnedMessage,
+)
 from modules.media.serializers import NestedMediaInRetrieveSerializer
 from modules.user.models import User
 from modules.user.serializers import NestedUserSerializer
+from utils.normalizer_utils import to_serializable_dict
 
 
 class CreateDirectConversationSerializer(serializers.ModelSerializer):
@@ -232,3 +241,173 @@ class SendMessageSerializer(serializers.Serializer):
 
 class DeliverMessageSerializer(serializers.Serializer):
     delivered_before = serializers.DateTimeField()
+
+
+class ListPinnedMessageSerializer(serializers.ModelSerializer):
+    message = NestedMessageSerializer(read_only=True)
+
+    class Meta:
+        model = PinnedMessage
+        fields = ("id", "message", "created_at")
+        read_only_fields = fields
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        # Get context data for mapped creators
+        mapped_creators: dict = self.context.get("mapped_creators", {})
+
+        # Retrieve the creator information from the mapped creators using the created_by field
+        creator = mapped_creators.get(str(instance.created_by))
+
+        # Add creator information to the representation if available
+        representation["creator"] = NestedUserSerializer(creator).data if creator else None
+
+        return representation
+
+
+class RetrievePinnedMessageSerializer(serializers.ModelSerializer):
+    message = NestedMessageSerializer(read_only=True)
+
+    class Meta:
+        model = PinnedMessage
+        fields = ("id", "message", "created_at")
+        read_only_fields = fields
+
+
+class PinMessageSerializer(serializers.ModelSerializer):
+    message_id = serializers.UUIDField(write_only=True)
+
+    class Meta:
+        model = PinnedMessage
+        fields = ("message_id",)
+
+    def validate(self, attrs):
+        view = self.context.get("view")
+        conversation_id = view.kwargs.get("conversation_id") if view else None
+        user: User | None = view.request.user if view and view.request else None
+
+        # Validate that the conversation exists and is not deleted
+        conversation = Conversation.objects.filter(id=conversation_id, deleted_at=None).first()
+        if not conversation:
+            raise serializers.ValidationError("Conversation not found.")
+
+        # Validate that the message exists in the conversation and is not deleted
+        message_id = attrs.pop("message_id")
+        message = Message.objects.filter(
+            id=message_id,
+            conversation=conversation,
+            deleted_at=None,
+        ).first()
+
+        if not message:
+            raise serializers.ValidationError("Message not found in the specified conversation.")
+
+        # Validate the message is pinned in the conversation
+        if PinnedMessage.objects.filter(
+            conversation=conversation,
+            message=message,
+            deleted_at=None,
+        ).exists():
+            raise serializers.ValidationError("Message is already pinned in this conversation.")
+
+        attrs["conversation"] = conversation
+        attrs["message"] = message
+        attrs["created_by"] = str(user.id) if user else None
+
+        return attrs
+
+    def create(self, validated_data):
+        # Create the pinned message instance
+        pinned_message = super().create(validated_data)
+
+        # Serialize the pinned message data
+        serialized_data = RetrievePinnedMessageSerializer(pinned_message).data
+
+        # Add creator information to the serialized data
+        creator = User.objects.filter(id=pinned_message.created_by).select_related("avatar").first()
+        serialized_data["creator"] = NestedUserSerializer(creator).data if creator else None
+
+        # Send the pinned message data to the conversation group via Channels
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"conversation_{pinned_message.conversation.id}",
+            {
+                "type": WebSocket.ServerEvent.Message.MESSAGE_PINNED,
+                **to_serializable_dict(serialized_data),
+            },
+        )
+
+        return serialized_data
+
+    def to_representation(self, instance):
+        return instance
+
+
+class UnpinMessageSerializer(serializers.ModelSerializer):
+    message_id = serializers.UUIDField(write_only=True)
+
+    class Meta:
+        model = PinnedMessage
+        fields = ("message_id",)
+
+    def validate(self, attrs):
+        view = self.context.get("view")
+        conversation_id = view.kwargs.get("conversation_id") if view else None
+
+        # Validate that the conversation exists and is not deleted
+        conversation = Conversation.objects.filter(id=conversation_id, deleted_at=None).first()
+        if not conversation:
+            raise serializers.ValidationError("Conversation not found.")
+
+        # Validate that the message exists in the conversation and is not deleted
+        message_id = attrs.pop("message_id")
+        message = Message.objects.filter(
+            id=message_id,
+            conversation=conversation,
+            deleted_at=None,
+        ).first()
+
+        if not message:
+            raise serializers.ValidationError("Message not found in the specified conversation.")
+
+        pinned_message = (
+            PinnedMessage.objects.filter(
+                conversation=conversation,
+                message=message,
+                deleted_at=None,
+            )
+            .select_related("conversation", "message")
+            .first()
+        )
+        # Validate the message is pinned in the conversation
+        if not pinned_message:
+            raise serializers.ValidationError("Message is not pinned in this conversation.")
+
+        attrs["pinned_message"] = pinned_message
+
+        return attrs
+
+    def create(self, validated_data):
+        pinned_message: PinnedMessage = validated_data.pop("pinned_message")
+
+        # Delete the pinned message instance to unpin the message
+        pinned_message.delete()
+
+        # Send the unpinned message ID to the conversation group via Channels
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"conversation_{pinned_message.conversation.id}",
+            {
+                "type": WebSocket.ServerEvent.Message.MESSAGE_UNPINNED,
+                "message_id": str(pinned_message.message.id),
+            },
+        )
+
+        return {
+            "status": ResponseStatus.SUCCESS,
+            "message": "Message unpinned successfully.",
+        }
+
+    def to_representation(self, instance):
+        return instance

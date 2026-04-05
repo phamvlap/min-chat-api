@@ -250,12 +250,26 @@ class ChatConsumer(BaseWebsocketConsumer):
     def chat_message_delivered(self, event: dict):
         self._dispatch_server_event(event)
 
+    def chat_message_pinned(self, event: dict):
+        self._dispatch_server_event(event)
+
+    def chat_message_unpinned(self, event: dict):
+        self._dispatch_server_event(event)
+
     def handle_new_message(self, event: dict):
         # Handle new message event from server
         self.send(text_data=json.dumps(event))
 
     def notify_sender_message_delivered(self, event: dict):
         # Send message delivered notification to the sender
+        self.send(text_data=json.dumps(event))
+
+    def notify_message_pinned(self, event: dict):
+        # Send message pinned notification to clients
+        self.send(text_data=json.dumps(event))
+
+    def notify_message_unpinned(self, event: dict):
+        # Send message unpinned notification to clients
         self.send(text_data=json.dumps(event))
 
     def _dispatch_client_event(self, event_type: str, data: dict) -> None:

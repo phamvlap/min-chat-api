@@ -141,3 +141,22 @@ class MessageStatus(BaseModel):
         choices=StatusChoices.choices,
         default=StatusChoices.SENT,
     )
+
+
+class PinnedMessage(BaseModel):
+    # The conversation to which the pinned message belongs
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        related_name="conversation_pinned_message",
+    )
+
+    # The message that is pinned in the conversation
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="message_pinned_message",
+    )
+
+    class Meta:
+        unique_together = ("conversation", "message")

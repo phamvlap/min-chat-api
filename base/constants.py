@@ -30,6 +30,8 @@ class WebSocket:
         class Message(StrEnum):
             MESSAGE = "chat.message"
             MESSAGE_DELIVERED = "chat.message_delivered"
+            MESSAGE_PINNED = "chat.message_pinned"
+            MESSAGE_UNPINNED = "chat.message_unpinned"
 
 
 class UploadConstants:

@@ -4,8 +4,10 @@ from .views import (
     CreateDirectConversationAPIView,
     ListConversationAPIView,
     ListMessageAPIView,
+    ListPinMessageAPIView,
     ReadMessageAPIView,
     RetrieveConversationAPIView,
+    UnpinMessageAPIView,
 )
 
 urlpatterns = [
@@ -25,5 +27,15 @@ urlpatterns = [
         "<uuid:conversation_id>/messages/read/",
         ReadMessageAPIView.as_view(),
         name="read-messages",
+    ),
+    path(
+        "<uuid:conversation_id>/messages/pin/",
+        ListPinMessageAPIView.as_view(),
+        name="list-pin-message",
+    ),
+    path(
+        "<uuid:conversation_id>/messages/unpin/",
+        UnpinMessageAPIView.as_view(),
+        name="unpin-message",
     ),
 ]
