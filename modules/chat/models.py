@@ -39,6 +39,12 @@ class Conversation(BaseModel):
         default=None,
     )
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["last_message_at"]),
+            models.Index(fields=["last_message_at", "deleted_at"]),
+        ]
+
 
 class ConversationMember(BaseModel):
     class MemberRoles(models.TextChoices):
@@ -79,6 +85,11 @@ class ConversationMember(BaseModel):
         default=None,
     )
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["conversation", "user", "deleted_at"]),
+        ]
+
 
 class Message(BaseModel):
     class Types(models.TextChoices):
@@ -118,6 +129,11 @@ class Message(BaseModel):
         default=None,
     )
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["conversation", "created_at", "deleted_at"]),
+        ]
+
 
 class MessageStatus(BaseModel):
     class StatusChoices(models.TextChoices):
@@ -142,6 +158,12 @@ class MessageStatus(BaseModel):
         default=StatusChoices.SENT,
     )
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["message", "user", "deleted_at", "status"]),
+            models.Index(fields=["user", "created_at", "deleted_at"]),
+        ]
+
 
 class PinnedMessage(BaseModel):
     # The conversation to which the pinned message belongs
@@ -160,3 +182,6 @@ class PinnedMessage(BaseModel):
 
     class Meta:
         unique_together = ("conversation", "message")
+        indexes = [
+            models.Index(fields=["conversation", "deleted_at"]),
+        ]

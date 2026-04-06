@@ -335,7 +335,11 @@ class PinMessageSerializer(serializers.ModelSerializer):
         serialized_data = RetrievePinnedMessageSerializer(pinned_message).data
 
         # Add creator information to the serialized data
-        creator = User.objects.filter(id=pinned_message.created_by).select_related("avatar").first()
+        creator = (
+            User.objects.filter(id=pinned_message.created_by, deleted_at=None)
+            .select_related("avatar")
+            .first()
+        )
         serialized_data["creator"] = NestedUserSerializer(creator).data if creator else None
 
         # Send the pinned message data to the conversation group via Channels

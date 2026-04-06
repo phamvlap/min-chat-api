@@ -27,3 +27,11 @@ class User(AbstractBaseUser):
     @property
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["deleted_at"]),
+            models.Index(fields=["id", "deleted_at"]),
+            models.Index(fields=["username", "deleted_at"]),
+            models.Index(fields=["clerk_user_id", "deleted_at"]),
+        ]

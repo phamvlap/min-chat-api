@@ -281,7 +281,7 @@ class ListPinMessageAPIView(BaseListAPIView, BaseCreateAPIView):
 
         # Get the creator IDs from the queryset and fetch the corresponding User objects
         creator_ids = self.get_queryset().values_list("created_by", flat=True).distinct()
-        creators = User.objects.filter(id__in=creator_ids).select_related("avatar")
+        creators = User.objects.filter(id__in=creator_ids, deleted_at=None).select_related("avatar")
 
         # Create a mapping of creator IDs to User objects and add it to the context
         mapped_creators = {str(creator.id): creator for creator in creators}
