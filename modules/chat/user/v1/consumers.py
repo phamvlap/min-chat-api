@@ -8,6 +8,7 @@ from base.constants import WebSocket
 from base.consumers import BaseWebsocketConsumer
 from modules.chat.permisisons import IsMemberOfConversation
 from utils.exceptions import extract_serializer_error
+from utils.normalizer_utils import to_serializable_dict
 
 from .dispatchers import CLIENT_EVENT_HANDLERS, SERVER_EVENT_HANDLERS
 
@@ -154,7 +155,7 @@ class ChatConsumer(BaseWebsocketConsumer):
 
         if self.user.avatar:
             sender_avatar = {
-                "id": str(self.user.avatar.id),
+                "id": self.user.avatar.id,
                 "key": self.user.avatar.key,
                 "key_type": self.user.avatar.key_type,
                 "original_name": self.user.avatar.original_name,
@@ -165,26 +166,26 @@ class ChatConsumer(BaseWebsocketConsumer):
 
         client_message_payload: dict[str, Any] = {
             "type": WebSocket.ServerEvent.Message.MESSAGE,
-            "conversation_id": str(self.conversation.id),
+            "conversation_id": self.conversation.id,
             "sender": {
-                "id": str(self.user.id),
+                "id": self.user.id,
                 "username": self.user.username,
                 "first_name": self.user.first_name,
                 "last_name": self.user.last_name,
                 "email": self.user.email,
-                "is_user": bool(self.user.is_user),
+                "is_user": self.user.is_user,
                 "avatar": sender_avatar,
             },
-            "message_id": str(message.id),
+            "message_id": message.id,
             "message": message.message,
             "message_type": message.message_type,
-            "created_at": str(message.created_at),
+            "created_at": message.created_at,
         }
 
         # Broadcast the new message to all group members
         async_to_sync(self.channel_layer.group_send)(
             self.conversation_group_name,
-            client_message_payload,
+            to_serializable_dict(client_message_payload),
         )
 
     def handle_message_delivered(self, data: dict):
@@ -239,11 +240,13 @@ class ChatConsumer(BaseWebsocketConsumer):
         for sender_id in sender_ids:
             async_to_sync(self.channel_layer.group_send)(
                 WebSocket.Group.USER.format(user_id=sender_id),
-                {
-                    "type": WebSocket.ServerEvent.Message.MESSAGE_DELIVERED,
-                    "conversation_id": str(self.conversation.id),
-                    "delivered_before": str(delivered_before),
-                },
+                to_serializable_dict(
+                    {
+                        "type": WebSocket.ServerEvent.Message.MESSAGE_DELIVERED,
+                        "conversation_id": self.conversation.id,
+                        "delivered_before": delivered_before,
+                    }
+                ),
             )
 
     def chat_message(self, event: dict):
@@ -260,19 +263,19 @@ class ChatConsumer(BaseWebsocketConsumer):
 
     def handle_new_message(self, event: dict):
         # Handle new message event from server
-        self.send(text_data=json.dumps(event))
+        self._send_message_to_client(event)
 
     def notify_sender_message_delivered(self, event: dict):
         # Send message delivered notification to the sender
-        self.send(text_data=json.dumps(event))
+        self._send_message_to_client(event)
 
     def notify_message_pinned(self, event: dict):
         # Send message pinned notification to clients
-        self.send(text_data=json.dumps(event))
+        self._send_message_to_client(event)
 
     def notify_message_unpinned(self, event: dict):
         # Send message unpinned notification to clients
-        self.send(text_data=json.dumps(event))
+        self._send_message_to_client(event)
 
     def _dispatch_client_event(self, event_type: str, data: dict) -> None:
         self.dispatch_event(
@@ -289,3 +292,6 @@ class ChatConsumer(BaseWebsocketConsumer):
             event_type=event_type if event_type else "",
             data=event,
         )
+
+    def _send_message_to_client(self, message: dict) -> None:
+        self.send(text_data=json.dumps(message))
