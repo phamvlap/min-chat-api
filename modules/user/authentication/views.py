@@ -1,3 +1,5 @@
+from rest_framework.exceptions import NotFound
+
 from base.constants import ViewAction
 from base.permission import IsAuthenticated
 from base.views import BaseCreateAPIView, BaseRetrieveAPIView, BaseUpdateAPIView
@@ -22,4 +24,12 @@ class RetrieveUpdateUserAPIView(BaseRetrieveAPIView, BaseUpdateAPIView):
         return RetrieveUserSerializer
 
     def get_object(self):
-        return self.request.user
+        user: User | None = (
+            self.model.objects.filter(id=self.request.user.id, deleted_at=None)
+            .select_related("avatar")
+            .first()
+        )
+
+        if not user:
+            raise NotFound("User not found.")
+        return user
