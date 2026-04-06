@@ -341,7 +341,7 @@ class PinMessageSerializer(serializers.ModelSerializer):
         # Send the pinned message data to the conversation group via Channels
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"conversation.{pinned_message.conversation.id}",
+            WebSocket.Group.CONVERSATION.format(conversation_id=pinned_message.conversation.id),
             {
                 "type": WebSocket.ServerEvent.Message.MESSAGE_PINNED,
                 **to_serializable_dict(serialized_data),
@@ -407,7 +407,7 @@ class UnpinMessageSerializer(serializers.ModelSerializer):
         # Send the unpinned message ID to the conversation group via Channels
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"conversation.{pinned_message.conversation.id}",
+            WebSocket.Group.CONVERSATION.format(conversation_id=pinned_message.conversation.id),
             {
                 "type": WebSocket.ServerEvent.Message.MESSAGE_UNPINNED,
                 "message_id": str(pinned_message.message.id),

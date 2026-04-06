@@ -28,10 +28,14 @@ class WebSocket:
 
     class ServerEvent:
         class Message(StrEnum):
-            MESSAGE = "chat.message"
-            MESSAGE_DELIVERED = "chat.message_delivered"
-            MESSAGE_PINNED = "chat.message_pinned"
-            MESSAGE_UNPINNED = "chat.message_unpinned"
+            MESSAGE = "chat_message"
+            MESSAGE_DELIVERED = "chat_message_delivered"
+            MESSAGE_PINNED = "chat_message_pinned"
+            MESSAGE_UNPINNED = "chat_message_unpinned"
+
+    class Group(StrEnum):
+        USER = "user.{user_id}"
+        CONVERSATION = "conversation.{conversation_id}"
 
 
 class UploadConstants:

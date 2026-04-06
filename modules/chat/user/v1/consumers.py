@@ -51,14 +51,16 @@ class ChatConsumer(BaseWebsocketConsumer):
             return
 
         # Set conversation name and conversation object
-        self.conversation_group_name = f"conversation.{conversation_id}"
+        self.conversation_group_name = WebSocket.Group.CONVERSATION.format(
+            conversation_id=conversation_id,
+        )
         self.conversation = conversation
 
         # Add the channel to the conversation group for broadcasting messages
         async_to_sync(self.channel_layer.group_add)(self.conversation_group_name, self.channel_name)
 
         # Add the channel to the user group for sending user-specific events (e.g., message delivery receipts)
-        self.user_group_name = f"user.{self.user.id}"
+        self.user_group_name = WebSocket.Group.USER.format(user_id=self.user.id)
         async_to_sync(self.channel_layer.group_add)(self.user_group_name, self.channel_name)
 
         # Accept the WebSocket connection
@@ -236,7 +238,7 @@ class ChatConsumer(BaseWebsocketConsumer):
         # Send message delivered notifications to the respective senders for the messages that were marked as delivered
         for sender_id in sender_ids:
             async_to_sync(self.channel_layer.group_send)(
-                f"user.{sender_id}",
+                WebSocket.Group.USER.format(user_id=sender_id),
                 {
                     "type": WebSocket.ServerEvent.Message.MESSAGE_DELIVERED,
                     "conversation_id": str(self.conversation.id),
