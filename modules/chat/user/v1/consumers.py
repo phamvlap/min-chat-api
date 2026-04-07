@@ -277,6 +277,10 @@ class ChatConsumer(BaseWebsocketConsumer):
         # Send message unpinned notification to clients
         self._send_message_to_client(event)
 
+    def notify_message_deleted_for_everyone(self, event: dict):
+        # Send message deleted for everyone notification to clients
+        self._send_message_to_client(event)
+
     def _dispatch_client_event(self, event_type: str, data: dict) -> None:
         self.dispatch_event(
             CLIENT_EVENT_HANDLERS,

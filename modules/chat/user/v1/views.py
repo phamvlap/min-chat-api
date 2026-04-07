@@ -1,5 +1,7 @@
 from typing import cast
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.db.models import (
     Case,
     CharField,
@@ -8,23 +10,32 @@ from django.db.models import (
     IntegerField,
     OuterRef,
     Prefetch,
+    Q,
     QuerySet,
     Subquery,
     Value,
     When,
 )
 from django.db.models.functions import Coalesce
-from rest_framework import status
+from django.utils import timezone
+from rest_framework import serializers, status
 from rest_framework.response import Response
 
-from base.constants import ViewAction
+from base.constants import ViewAction, WebSocket
 from base.permission import IsUser
-from base.views import BaseCreateAPIView, BaseListAPIView, BaseRetrieveAPIView, BaseUpdateAPIView
+from base.views import (
+    BaseCreateAPIView,
+    BaseDestroyAPIView,
+    BaseListAPIView,
+    BaseRetrieveAPIView,
+    BaseUpdateAPIView,
+)
 from modules.chat.models import (
     Conversation,
     ConversationMember,
     Message,
     MessageStatus,
+    MessageVisibility,
     PinnedMessage,
 )
 from modules.user.models import User
@@ -32,6 +43,7 @@ from modules.user.models import User
 from .filters import ListMessageFilter
 from .serializers import (
     CreateDirectConversationSerializer,
+    DeleteMessageSerializer,
     ListConversationSerializer,
     ListMessageSerializer,
     ListPinnedMessageSerializer,
@@ -170,6 +182,11 @@ class ListMessageAPIView(BaseListAPIView):
                 conversation__conversation_member__user=user,
                 conversation__conversation_member__deleted_at=None,
             )
+            .exclude(
+                message_visibility__user=user,
+                message_visibility__is_hidden=True,
+                message_visibility__deleted_at=None,
+            )
             .annotate(
                 status=Case(
                     When(
@@ -295,3 +312,147 @@ class UnpinMessageAPIView(BaseCreateAPIView):
     model = PinnedMessage
     serializer_class = UnpinMessageSerializer
     lookup_url_kwarg = "conversation_id"
+
+
+class DeleteMessageAPIView(BaseDestroyAPIView):
+    permission_classes = (IsUser,)
+    model = Message
+    serializer_class = DeleteMessageSerializer
+    lookup_url_kwarg = "conversation_id"
+
+    def get_queryset(self):
+        user: User = cast(User, self.request.user)
+        conversation_id = self.kwargs.get("conversation_id")
+
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                conversation__id=conversation_id,
+                conversation__conversation_member__user=user,
+                conversation__conversation_member__deleted_at=None,
+            )
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        conversation_id = kwargs.get("conversation_id")
+        user = cast(User, self.request.user)
+
+        # Validate that the conversation exists and is not deleted
+        conversation = Conversation.objects.filter(id=conversation_id, deleted_at=None).first()
+        if not conversation:
+            raise serializers.ValidationError("Conversation not found.")
+
+        # Validate request data
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Get validated data
+        validated_data = serializer.validated_data
+
+        # Validate that the message exists in the conversation and is not deleted
+        message_id = validated_data.pop("message_id")
+        message = (
+            Message.objects.filter(
+                id=message_id,
+                conversation=conversation,
+                deleted_at=None,
+            )
+            .select_related("sender", "conversation")
+            .first()
+        )
+
+        if not message:
+            raise serializers.ValidationError("Message not found in the specified conversation.")
+
+        if not message.sender or message.message_type == Message.Types.SYSTEM:
+            raise serializers.ValidationError("System messages cannot be deleted.")
+
+        if validated_data["is_deleted_for_everyone"] and not self._can_delete_for_everyone(
+            user,
+            message,
+        ):
+            raise serializers.ValidationError(
+                "You can only delete messages for everyone that you have sent."
+            )
+
+        # Perform the delete operation
+        if validated_data["is_deleted_for_everyone"]:
+            # If the message is already deleted for everyone, return 204 No Content without doing anything
+            if message.is_deleted_for_everyone:
+                return Response(status=status.HTTP_204_NO_CONTENT)
+
+            # Mark the message as deleted for everyone
+            message.is_deleted_for_everyone = True
+            message.deleted_for_everyone_at = timezone.now()
+            message.deleted_for_everyone_by = user
+            message.save(
+                update_fields=[
+                    "is_deleted_for_everyone",
+                    "deleted_for_everyone_at",
+                    "deleted_for_everyone_by",
+                ]
+            )
+
+            # Notify all members in the conversation about the message being deleted for everyone
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                WebSocket.Group.CONVERSATION.format(conversation_id=conversation_id),
+                {
+                    "type": WebSocket.ServerEvent.Message.MESSAGE_DELETED_FOR_EVERYONE,
+                    "message_id": str(message.id),
+                },
+            )
+        else:
+            # Mark the message as hidden for the user
+            MessageVisibility.objects.update_or_create(
+                message=message,
+                user=user,
+                defaults={
+                    "is_hidden": True,
+                    "hidden_at": timezone.now(),
+                },
+            )
+
+            # Update the last visible message for the user in the conversation if necessary
+            self._update_last_message_for_user(user, message)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def _update_last_message_for_user(self, user: User, message: Message):
+        # Get the ConversationMember instance for the user and conversation
+        member = (
+            ConversationMember.objects.filter(
+                conversation=message.conversation,
+                user=user,
+                deleted_at=None,
+            )
+            .select_related("last_visible_message")
+            .first()
+        )
+
+        # Only update the last visible message if the deleted message is currently the last visible message for the user
+        if member and member.last_visible_message == message:
+            # Find the new last visible message for the user in the conversation
+            new_last_message = self._find_new_last_message(message.conversation, user)
+
+            # Update the last visible message for the user in the conversation
+            member.last_visible_message = new_last_message
+            member.save(update_fields=["last_visible_message"])
+
+    def _can_delete_for_everyone(self, user: User, message: Message) -> bool:
+        return bool(message.sender and message.sender.id == user.id)
+
+    def _find_new_last_message(self, conversation: Conversation, user: User) -> Message | None:
+        return (
+            Message.objects.filter(
+                conversation=conversation,
+                conversation__deleted_at=None,
+            )
+            .exclude(
+                Q(message_visibility__user=user, message_visibility__is_hidden=True)
+                | Q(is_deleted_for_everyone=True)
+            )
+            .order_by("-created_at")
+            .first()
+        )

@@ -32,6 +32,7 @@ class WebSocket:
             MESSAGE_DELIVERED = "chat_message_delivered"
             MESSAGE_PINNED = "chat_message_pinned"
             MESSAGE_UNPINNED = "chat_message_unpinned"
+            MESSAGE_DELETED_FOR_EVERYONE = "chat_message_deleted_for_everyone"
 
     class Group(StrEnum):
         USER = "user.{user_id}"

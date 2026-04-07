@@ -233,8 +233,19 @@ class ListMessageSerializer(serializers.ModelSerializer):
             "replied_to",
             "status",
             "is_pinned",
+            "is_deleted_for_everyone",
         )
         read_only_fields = fields
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        # If the message is deleted for everyone, hidden the message content and related fields in the representation
+        if instance.is_deleted_for_everyone:
+            representation["message"] = None
+            representation["replied_to"] = None
+
+        return representation
 
 
 class ReadMessageSerializer(serializers.Serializer):
@@ -425,3 +436,8 @@ class UnpinMessageSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         return instance
+
+
+class DeleteMessageSerializer(serializers.Serializer):
+    message_id = serializers.UUIDField(write_only=True)
+    is_deleted_for_everyone = serializers.BooleanField(default=False, write_only=True)

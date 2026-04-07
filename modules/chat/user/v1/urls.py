@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     CreateDirectConversationAPIView,
+    DeleteMessageAPIView,
     ListConversationAPIView,
     ListMessageAPIView,
     ListPinMessageAPIView,
@@ -37,5 +38,10 @@ urlpatterns = [
         "<uuid:conversation_id>/messages/unpin/",
         UnpinMessageAPIView.as_view(),
         name="unpin-message",
+    ),
+    path(
+        "<uuid:conversation_id>/messages/delete/",
+        DeleteMessageAPIView.as_view(),
+        name="delete-message",
     ),
 ]

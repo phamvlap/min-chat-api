@@ -129,6 +129,18 @@ class Message(BaseModel):
         default=None,
     )
 
+    # Flag to indicate if the message has been deleted for everyone
+    is_deleted_for_everyone = models.BooleanField(default=False)
+    deleted_for_everyone_at = models.DateTimeField(null=True, blank=True, default=None)
+    deleted_for_everyone_by = models.ForeignKey(
+        "user.User",
+        on_delete=models.SET_NULL,
+        related_name="deleted_for_everyone_by_message",
+        null=True,
+        blank=True,
+        default=None,
+    )
+
     class Meta:
         indexes = [
             models.Index(fields=["conversation", "created_at", "deleted_at"]),
@@ -185,3 +197,23 @@ class PinnedMessage(BaseModel):
         indexes = [
             models.Index(fields=["conversation", "deleted_at"]),
         ]
+
+
+class MessageVisibility(BaseModel):
+    # The message whose visibility is being tracked
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="message_visibility",
+    )
+
+    # The user for whom the visibility applies
+    user = models.ForeignKey(
+        "user.User",
+        on_delete=models.CASCADE,
+        related_name="user_message_visibility",
+    )
+
+    # Flag to indicate if the message is hidden for the user
+    is_hidden = models.BooleanField(default=False)
+    hidden_at = models.DateTimeField(null=True, blank=True, default=None)
