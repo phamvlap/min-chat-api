@@ -261,6 +261,9 @@ class ChatConsumer(BaseWebsocketConsumer):
     def chat_message_unpinned(self, event: dict):
         self._dispatch_server_event(event)
 
+    def chat_message_deleted_for_everyone(self, event: dict):
+        self._dispatch_server_event(event)
+
     def handle_new_message(self, event: dict):
         # Handle new message event from server
         self._send_message_to_client(event)
