@@ -11,4 +11,5 @@ SERVER_EVENT_HANDLERS = {
     WebSocket.ServerEvent.Message.MESSAGE_PINNED: "notify_message_pinned",
     WebSocket.ServerEvent.Message.MESSAGE_UNPINNED: "notify_message_unpinned",
     WebSocket.ServerEvent.Message.MESSAGE_DELETED_FOR_EVERYONE: "notify_message_deleted_for_everyone",
+    WebSocket.ServerEvent.Message.REACTION_UPDATED: "notify_reaction_updated",
 }

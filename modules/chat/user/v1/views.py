@@ -1,4 +1,5 @@
-from typing import cast
+from collections import defaultdict
+from typing import Any, cast
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -34,6 +35,7 @@ from modules.chat.models import (
     Conversation,
     ConversationMember,
     Message,
+    MessageReaction,
     MessageStatus,
     MessageVisibility,
     PinnedMessage,
@@ -48,6 +50,7 @@ from .serializers import (
     ListMessageSerializer,
     ListPinnedMessageSerializer,
     PinMessageSerializer,
+    ReactMessageSerializer,
     ReadMessageSerializer,
     RetrieveConversationSerializer,
     UnpinMessageSerializer,
@@ -228,6 +231,31 @@ class ListMessageAPIView(BaseListAPIView):
             .select_related("sender__avatar", "replied_to__sender__avatar")
             .order_by("-created_at")
         )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+
+        # Get the message IDs from the queryset and fetch the corresponding reactions
+        message_ids = self.get_queryset().values_list("id", flat=True)
+        reactions = (
+            MessageReaction.objects.filter(message_id__in=message_ids, deleted_at=None)
+            .values("message_id", "reaction_type")
+            .annotate(count=Count("id"))
+        )
+
+        # Create a mapping of message IDs to their reactions and add it to the context
+        message_reaction_mapping: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for reaction in reactions:
+            message_id = str(reaction["message_id"])
+            message_reaction_mapping[message_id].append(
+                {
+                    "reaction_type": reaction["reaction_type"],
+                    "count": reaction["count"],
+                }
+            )
+        context["message_reaction_mapping"] = message_reaction_mapping
+
+        return context
 
 
 class ReadMessageAPIView(BaseUpdateAPIView):
@@ -463,3 +491,10 @@ class DeleteMessageAPIView(BaseDestroyAPIView):
             .order_by("-created_at")
             .first()
         )
+
+
+class ReactMessageAPIView(BaseCreateAPIView):
+    permission_classes = (IsUser,)
+    model = MessageReaction
+    serializer_class = ReactMessageSerializer
+    lookup_url_kwarg = "conversation_id"

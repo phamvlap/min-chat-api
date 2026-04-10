@@ -6,6 +6,7 @@ from .views import (
     ListConversationAPIView,
     ListMessageAPIView,
     ListPinMessageAPIView,
+    ReactMessageAPIView,
     ReadMessageAPIView,
     RetrieveConversationAPIView,
     UnpinMessageAPIView,
@@ -43,5 +44,10 @@ urlpatterns = [
         "<uuid:conversation_id>/messages/delete/",
         DeleteMessageAPIView.as_view(),
         name="delete-message",
+    ),
+    path(
+        "<uuid:conversation_id>/messages/react/",
+        ReactMessageAPIView.as_view(),
+        name="react-message",
     ),
 ]

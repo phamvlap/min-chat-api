@@ -1,4 +1,5 @@
 import json
+from enum import StrEnum
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -10,6 +11,7 @@ from modules.chat.models import (
     Conversation,
     ConversationMember,
     Message,
+    MessageReaction,
     MessageStatus,
     PinnedMessage,
 )
@@ -233,6 +235,16 @@ class RetrieveConversationSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class MessageReactionInMessageListSerializer(serializers.ModelSerializer):
+    reaction_type = serializers.CharField(read_only=True)
+    count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = MessageReaction
+        fields = ("reaction_type", "count")
+        read_only_fields = fields
+
+
 class ListMessageSerializer(serializers.ModelSerializer):
     sender = NestedUserSerializer(read_only=True)
     replied_to = "self"  # Recursive relationship for nested replies
@@ -261,6 +273,15 @@ class ListMessageSerializer(serializers.ModelSerializer):
         if instance.is_deleted_for_everyone:
             representation["message"] = None
             representation["replied_to"] = None
+
+        message_reaction_mapping = self.context.get("message_reaction_mapping", {})
+        message_id_str = str(instance.id)
+
+        representation["reactions"] = MessageReactionInMessageListSerializer(
+            message_reaction_mapping.get(message_id_str, []),
+            many=True,
+            read_only=True,
+        ).data
 
         return representation
 
@@ -458,3 +479,88 @@ class UnpinMessageSerializer(serializers.ModelSerializer):
 class DeleteMessageSerializer(serializers.Serializer):
     message_id = serializers.UUIDField(write_only=True)
     is_deleted_for_everyone = serializers.BooleanField(default=False, write_only=True)
+
+
+class ReactionStatus(StrEnum):
+    ADDED = "added"
+    REMOVED = "removed"
+
+
+class ReactMessageSerializer(serializers.ModelSerializer):
+    message_id = serializers.UUIDField(write_only=True)
+    reaction_type = serializers.ChoiceField(choices=MessageReaction.ReactionTypes.choices)
+
+    class Meta:
+        model = MessageReaction
+        fields = ("message_id", "reaction_type")
+
+    def validate(self, attrs):
+        view = self.context.get("view")
+        conversation_id = view.kwargs.get("conversation_id") if view else None
+
+        # Validate that the conversation exists and is not deleted
+        conversation = Conversation.objects.filter(id=conversation_id, deleted_at=None).first()
+        if not conversation:
+            raise serializers.ValidationError("Conversation not found.")
+
+        # Validate that the message exists in the conversation and is not deleted
+        message_id = attrs.pop("message_id")
+        message = Message.objects.filter(
+            id=message_id,
+            conversation=conversation,
+            deleted_at=None,
+        ).first()
+
+        if not message:
+            raise serializers.ValidationError("Message not found in the specified conversation.")
+
+        attrs["message"] = message
+
+        return attrs
+
+    def create(self, validated_data):
+        message: Message = validated_data.pop("message")
+        reaction_type: str = validated_data.pop("reaction_type")
+        view = self.context.get("view")
+        user: User | None = view.request.user if view and view.request else None
+
+        # Check if the same reaction already exists for the message by the user
+        existing_reaction = MessageReaction.objects.filter(
+            message=message,
+            user=user,
+            reaction_type=reaction_type,
+            deleted_at=None,
+        ).first()
+
+        if existing_reaction:
+            # If the same reaction already exists, remove it (toggle off)
+            existing_reaction.delete()
+            reaction_status = ReactionStatus.REMOVED
+        else:
+            # Otherwise, create a new reaction (toggle on)
+            MessageReaction.objects.create(
+                message=message,
+                user=user,
+                reaction_type=reaction_type,
+            )
+            reaction_status = ReactionStatus.ADDED
+
+        # Send the updated reaction status to the conversation group via Channels
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            WebSocket.Group.CONVERSATION.format(conversation_id=message.conversation.id),
+            {
+                "type": WebSocket.ServerEvent.Message.REACTION_UPDATED,
+                "message_id": str(message.id),
+                "reaction_type": reaction_type,
+                "reaction_status": reaction_status,
+            },
+        )
+
+        return {
+            "status": ResponseStatus.SUCCESS,
+            "reaction_status": reaction_status,
+        }
+
+    def to_representation(self, instance):
+        return instance

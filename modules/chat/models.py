@@ -217,3 +217,33 @@ class MessageVisibility(BaseModel):
     # Flag to indicate if the message is hidden for the user
     is_hidden = models.BooleanField(default=False)
     hidden_at = models.DateTimeField(null=True, blank=True, default=None)
+
+
+class MessageReaction(BaseModel):
+    class ReactionTypes(models.TextChoices):
+        HEART = "heart", _("Heart")
+        THUMBS_UP = "thumbs_up", _("Thumbs Up")
+        THUMBS_DOWN = "thumbs_down", _("Thumbs Down")
+        LAUGHING = "laughing", _("Laughing")
+        CRY = "cry", _("Cry")
+        ANGRY = "angry", _("Angry")
+
+    # The message to which the reaction belongs
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="message_reaction",
+    )
+
+    # The user who reacted to the message
+    user = models.ForeignKey(
+        "user.User",
+        on_delete=models.CASCADE,
+        related_name="user_message_reaction",
+    )
+
+    # The type of reaction
+    reaction_type = models.CharField(max_length=20, choices=ReactionTypes.choices)
+
+    class Meta:
+        unique_together = ("message", "user", "reaction_type")
