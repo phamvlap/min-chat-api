@@ -278,12 +278,19 @@ class ListPinMessageAPIView(BaseListAPIView, BaseCreateAPIView):
     ordering_fields = ("created_at", "message__created_at")
 
     def get_queryset(self):
+        user: User = cast(User, self.request.user)
+
         return (
             super()
             .get_queryset()
             .filter(
                 conversation_id=self.kwargs.get("conversation_id"),
                 conversation__deleted_at=None,
+            )
+            .exclude(
+                message__message_visibility__user=user,
+                message__message_visibility__is_hidden=True,
+                message__message_visibility__deleted_at=None,
             )
             .select_related("message__sender__avatar")
         )

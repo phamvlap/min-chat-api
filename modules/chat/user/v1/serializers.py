@@ -146,8 +146,25 @@ class NestedMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ("id", "sender", "message", "message_type", "created_at")
+        fields = (
+            "id",
+            "sender",
+            "message",
+            "message_type",
+            "created_at",
+            "is_deleted_for_everyone",
+        )
         read_only_fields = fields
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        # If the message is deleted for everyone, hidden the message content and related fields in the representation
+        if instance.is_deleted_for_everyone:
+            representation["message"] = None
+            representation["replied_to"] = None
+
+        return representation
 
 
 class NestedConversationMemberSerializer(serializers.ModelSerializer):
