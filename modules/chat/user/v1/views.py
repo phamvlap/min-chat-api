@@ -11,7 +11,6 @@ from django.db.models import (
     IntegerField,
     OuterRef,
     Prefetch,
-    Q,
     QuerySet,
     Subquery,
     Value,
@@ -484,10 +483,7 @@ class DeleteMessageAPIView(BaseDestroyAPIView):
                 conversation=conversation,
                 conversation__deleted_at=None,
             )
-            .exclude(
-                Q(message_visibility__user=user, message_visibility__is_hidden=True)
-                | Q(is_deleted_for_everyone=True)
-            )
+            .exclude(message_visibility__user=user, message_visibility__is_hidden=True)
             .order_by("-created_at")
             .first()
         )
