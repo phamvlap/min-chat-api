@@ -1,6 +1,6 @@
 from django_filters import rest_framework as filters
 
-from modules.chat.models import Message
+from modules.chat.models import Message, MessageReaction
 
 
 class ListMessageFilter(filters.FilterSet):
@@ -10,3 +10,9 @@ class ListMessageFilter(filters.FilterSet):
     class Meta:
         model = Message
         fields = ["creation_time_before", "creation_time_after"]
+
+
+class ListMessageReactionFilter(filters.FilterSet):
+    class Meta:
+        model = MessageReaction
+        fields = ["reaction_type"]

@@ -564,3 +564,12 @@ class ReactMessageSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         return instance
+
+
+class ListMessageReactionSerializer(serializers.ModelSerializer):
+    user = NestedUserSerializer(read_only=True)
+
+    class Meta:
+        model = MessageReaction
+        fields = ("id", "user", "reaction_type", "created_at")
+        read_only_fields = fields

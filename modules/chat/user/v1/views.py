@@ -41,11 +41,12 @@ from modules.chat.models import (
 )
 from modules.user.models import User
 
-from .filters import ListMessageFilter
+from .filters import ListMessageFilter, ListMessageReactionFilter
 from .serializers import (
     CreateDirectConversationSerializer,
     DeleteMessageSerializer,
     ListConversationSerializer,
+    ListMessageReactionSerializer,
     ListMessageSerializer,
     ListPinnedMessageSerializer,
     PinMessageSerializer,
@@ -494,3 +495,34 @@ class ReactMessageAPIView(BaseCreateAPIView):
     model = MessageReaction
     serializer_class = ReactMessageSerializer
     lookup_url_kwarg = "conversation_id"
+
+
+class ListMessageReactionAPIView(BaseListAPIView):
+    permission_classes = (IsUser,)
+    model = MessageReaction
+    serializer_class = ListMessageReactionSerializer
+    filterset_class = ListMessageReactionFilter
+    lookup_url_kwarg = "conversation_id"
+
+    def get_queryset(self):
+        user: User = cast(User, self.request.user)
+        conversation_id = self.kwargs.get("conversation_id")
+        message_id = self.kwargs.get("message_id")
+
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                message__conversation_id=conversation_id,
+                message__conversation__deleted_at=None,
+                message__conversation__conversation_member__user=user,
+                message_id=message_id,
+                deleted_at=None,
+            )
+            .exclude(
+                message__message_visibility__user=user,
+                message__message_visibility__is_hidden=True,
+                message__message_visibility__deleted_at=None,
+            )
+            .select_related("user__avatar")
+        )
