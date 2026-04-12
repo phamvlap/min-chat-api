@@ -226,23 +226,25 @@ else:
 
 # Cacheops configuration
 CACHEOPS_REDIS = REDIS_URL
+CACHEOPS_REDIS_CONFIG = {"ssl_cert_reqs": None} if REDIS_USE_SSL else {}
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": CACHEOPS_REDIS,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "CONNECTION_POOL_KWARGS": {"ssl_cert_reqs": None},
+            "CONNECTION_POOL_KWARGS": {**CACHEOPS_REDIS_CONFIG},
         },
     }
 }
 
 # Channels configuration
+CHANNEL_LAYERS_REDIS_CONFIG = {"ssl_cert_reqs": None} if REDIS_USE_SSL else {}
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [{"address": REDIS_URL, "ssl_cert_reqs": None}],
+            "hosts": [{"address": REDIS_URL, **CHANNEL_LAYERS_REDIS_CONFIG}],
         },
     },
 }
@@ -270,7 +272,8 @@ S3_PRIVATE_BUCKET = SUPABASE_S3_PRIVATE_BUCKET
 S3_PUBLIC_BUCKET = SUPABASE_S3_PUBLIC_BUCKET
 
 # Celery configuration
-CELERY_URL = f"{REDIS_URL}/0?ssl_cert_reqs=CERT_NONE"
+CELERY_URL = f"{REDIS_URL}/0?ssl_cert_reqs=CERT_NONE" if REDIS_USE_SSL else f"{REDIS_URL}/0"
+
 CELERY_BROKER_URL = CELERY_URL
 CELERY_RESULT_BACKEND = CELERY_URL
 CELERY_ACCEPT_CONTENT = ["json"]
@@ -279,11 +282,14 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_CACHE_BACKEND = "django-cache"
 CELERY_IMPORTS = ("base.tasks",)
 DJANGO_CELERY_RESULTS_TASK_ID_MAX_LENGTH = 191
-CELERY_BROKER_USE_SSL = {
-    "ssl_cert_reqs": ssl.CERT_NONE,
-    "ssl_check_hostname": False,
-}
-CELERY_REDIS_BACKEND_USE_SSL = {
-    "ssl_cert_reqs": ssl.CERT_NONE,
-    "ssl_check_hostname": False,
-}
+
+# Configure SSL for Redis if needed
+if REDIS_USE_SSL:
+    CELERY_BROKER_USE_SSL = {
+        "ssl_cert_reqs": ssl.CERT_NONE,
+        "ssl_check_hostname": False,
+    }
+    CELERY_REDIS_BACKEND_USE_SSL = {
+        "ssl_cert_reqs": ssl.CERT_NONE,
+        "ssl_check_hostname": False,
+    }
