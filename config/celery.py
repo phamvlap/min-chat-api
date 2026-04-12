@@ -12,9 +12,9 @@ app.autodiscover_tasks()
 # Update Celery configuration
 app.conf.update(
     worker_pool_restarts=True,
-    task_serializer="pickle",
-    accept_content=["pickle"],  # Ignore other content
-    result_serializer="pickle",
+    task_serializer="json",
+    accept_content=["json"],  # Ignore other content
+    result_serializer="json",
     timezone="UTC",
     enable_utc=True,
     task_acks_late=True,

@@ -87,7 +87,7 @@ class CeleryHealthCheckAPIView(RetrieveAPIView):
     def _check_task_execution(self) -> tuple[bool, str | None]:
         try:
             result = health_check_task.delay()
-            task_result = result.get(timeout=5)  # Wait for up to 2 seconds
+            task_result = result.get(timeout=2)  # Wait for up to 2 seconds
         except Exception as exc:
             return False, str(exc)
         else:
