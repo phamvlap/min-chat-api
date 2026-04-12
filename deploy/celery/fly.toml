@@ -1,0 +1,15 @@
+app = "mini-chat-celery"
+primary_region = "sin"
+kill_signal = "SIGINT"
+kill_timeout = 120 # 2 minutes
+
+[[services]]
+  auto_stop_machines = "stop"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "256mb"
+
+[experimental]
+  cmd = ["celery", "-A", "config", "worker", "--loglevel=INFO"]
