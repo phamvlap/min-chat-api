@@ -1,8 +1,11 @@
 from collections.abc import Iterable
 
+from celery import current_app
+from django.conf import settings
 from django.db import IntegrityError, models
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
+from kombu import Connection
 from rest_framework.exceptions import APIException
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import (
@@ -17,6 +20,7 @@ from rest_framework.response import Response
 
 from base.constants import ViewAction
 from base.pagination import ItemIndexPagination
+from base.tasks import health_check_task
 
 from .permission import IsAuthenticated
 from .serializers import (
@@ -40,6 +44,76 @@ class HealthCheckAPIView(RetrieveAPIView):
                 "environment": "development",
             }
         )
+
+
+class CeleryHealthCheckAPIView(RetrieveAPIView):
+    permission_classes = ()
+
+    def get(self, request, *args, **kwargs):
+        health_checks = {}
+
+        # Check if Celery worker can execute tasks
+        task_execution_ok, task_execution_error = self._check_task_execution()
+        health_checks["task_execution"] = {
+            "status": "ok" if task_execution_ok else "error",
+            "error": task_execution_error,
+        }
+
+        # Check if Celery worker is alive
+        worker_alive_ok, worker_alive_error = self._check_worker_alive()
+        health_checks["worker_alive"] = {
+            "status": "ok" if worker_alive_ok else "error",
+            "error": worker_alive_error,
+        }
+
+        # Check if Celery can connect to the broker
+        broker_connection_ok, broker_connection_error = self._check_broker_connection()
+        health_checks["broker_connection"] = {
+            "status": "ok" if broker_connection_ok else "error",
+            "error": broker_connection_error,
+        }
+
+        # Determine overall health status based on individual checks
+        overall_ok: bool = all(check["status"] == "ok" for check in health_checks.values())
+
+        return Response(
+            {
+                "name": "Celery Worker",
+                "status": "healthy" if overall_ok else "unhealthy",
+                "health_checks": health_checks,
+            }
+        )
+
+    def _check_task_execution(self) -> tuple[bool, str | None]:
+        try:
+            result = health_check_task.delay()
+            task_result = result.get(timeout=5)  # Wait for up to 2 seconds
+        except Exception as exc:
+            return False, str(exc)
+        else:
+            if task_result != "ok":
+                return False, f"Unexpected task result: {task_result}"
+            return True, None
+
+    def _check_worker_alive(self) -> tuple[bool, str | None]:
+        try:
+            inspect = current_app.control.inspect()
+            response = inspect.ping()
+        except Exception as exc:
+            return False, str(exc)
+        else:
+            if not response:
+                return False, "No response from worker"
+            return True, None
+
+    def _check_broker_connection(self) -> tuple[bool, str | None]:
+        try:
+            with Connection(settings.CELERY_BROKER_URL, ssl=True) as conn:
+                conn.connect()
+        except Exception as exc:
+            return False, str(exc)
+        else:
+            return True, None
 
 
 class BaseListAPIView(ListModelMixin, GenericAPIView):

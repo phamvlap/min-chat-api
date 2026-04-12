@@ -18,6 +18,7 @@ Including another URLconf
 from django.urls import include, path
 
 from base.views import (
+    CeleryHealthCheckAPIView,
     CompleteMultipartUploadAPIView,
     CreateMultipartUploadAPIView,
     CreatePresignedURLAPIView,
@@ -29,6 +30,11 @@ from modules.urls import urlpatterns as module_urlpatterns
 
 urlpatterns = [
     path("", HealthCheckAPIView.as_view(), name="health-check-api"),
+    path(
+        "celery/health-check/",
+        CeleryHealthCheckAPIView.as_view(),
+        name="celery-health-check-api",
+    ),
     path("api/general/authentication/", include("modules.user.authentication.urls")),
     # Media upload related URLs
     path(
