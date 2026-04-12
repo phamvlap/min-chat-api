@@ -1,11 +1,13 @@
 from collections.abc import Iterable
+from typing import Any
 
 from celery import current_app
 from django.conf import settings
-from django.db import IntegrityError, models
+from django.db import IntegrityError, connections, models
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from kombu import Connection
+from redis import Redis
 from rest_framework.exceptions import APIException
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import (
@@ -36,14 +38,68 @@ class HealthCheckAPIView(RetrieveAPIView):
     permission_classes = ()
 
     def get(self, request, *args, **kwargs):
+        health_checks: dict[str, Any] = {}
+
+        # Check Redis connectivity
+        redis_ok, redis_error = self._check_redis()
+        health_checks["redis"] = {
+            "status": "up" if redis_ok else "down",
+            "error": redis_error,
+        }
+
+        # Check database connectivity
+        db_health = self._check_databases()
+        health_checks["databases"] = db_health
+
+        db_health_ok: bool = all(
+            check["status"] == "up" for check in health_checks["databases"].values()
+        )
+
+        # Determine overall health status based on individual checks
+        overall_ok: bool = all(
+            check["status"] == "up" for key, check in health_checks.items() if key != "databases"
+        )
+
+        overall_ok = overall_ok and db_health_ok
+
         return Response(
             {
                 "name": "Django WebSocket API",
-                "status": "healthy",
-                "version": "1.0.0",
-                "environment": "development",
+                "status": "healthy" if overall_ok else "unhealthy",
+                "version": "1.0",
+                "environment": settings.ENVIRONMENT,
+                "health_checks": health_checks,
             }
         )
+
+    def _check_databases(self) -> dict[str, dict[str, str | None]]:
+        db_health = {}
+
+        for alias in connections:
+            try:
+                with connections[alias].cursor() as cursor:
+                    cursor.execute("SELECT 1")
+            except Exception as exc:
+                db_health[alias] = {
+                    "status": "down",
+                    "error": str(exc),
+                }
+            else:
+                db_health[alias] = {
+                    "status": "up",
+                    "error": None,
+                }
+
+        return db_health
+
+    def _check_redis(self) -> tuple[bool, str | None]:
+        try:
+            redis_client = Redis.from_url(settings.REDIS_URL)
+            redis_client.ping()
+        except Exception as exc:
+            return False, str(exc)
+        else:
+            return True, None
 
 
 class CeleryHealthCheckAPIView(RetrieveAPIView):

@@ -161,6 +161,9 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+# API environment
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
 # Logging configuration
 LOGGING = {
     "version": 1,

@@ -29,7 +29,7 @@ from base.views import (
 from modules.urls import urlpatterns as module_urlpatterns
 
 urlpatterns = [
-    path("", HealthCheckAPIView.as_view(), name="health-check-api"),
+    path("health/", HealthCheckAPIView.as_view(), name="health-check-api"),
     path(
         "celery/health-check/",
         CeleryHealthCheckAPIView.as_view(),
