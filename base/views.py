@@ -164,7 +164,7 @@ class CeleryHealthCheckAPIView(RetrieveAPIView):
 
     def _check_broker_connection(self) -> tuple[bool, str | None]:
         try:
-            with Connection(settings.CELERY_BROKER_URL, ssl=True) as conn:
+            with Connection(settings.CELERY_BROKER_URL, ssl=settings.REDIS_USE_SSL) as conn:
                 conn.connect()
         except Exception as exc:
             return False, str(exc)

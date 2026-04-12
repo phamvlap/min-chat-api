@@ -31,7 +31,7 @@ from modules.urls import urlpatterns as module_urlpatterns
 urlpatterns = [
     path("health/", HealthCheckAPIView.as_view(), name="health-check-api"),
     path(
-        "celery/health-check/",
+        "celery/health/",
         CeleryHealthCheckAPIView.as_view(),
         name="celery-health-check-api",
     ),
