@@ -279,5 +279,11 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_CACHE_BACKEND = "django-cache"
 CELERY_IMPORTS = ("base.tasks",)
 DJANGO_CELERY_RESULTS_TASK_ID_MAX_LENGTH = 191
-CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
-CELERY_REDIS_BACKEND_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
+CELERY_BROKER_USE_SSL = {
+    "ssl_cert_reqs": ssl.CERT_NONE,
+    "ssl_check_hostname": False,
+}
+CELERY_REDIS_BACKEND_USE_SSL = {
+    "ssl_cert_reqs": ssl.CERT_NONE,
+    "ssl_check_hostname": False,
+}
