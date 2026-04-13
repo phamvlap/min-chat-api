@@ -9,7 +9,7 @@ kill_timeout = 120 # 2 minutes
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory = "512mb"
+  memory = "1gb"
 
 [experimental]
   cmd = ["uv", "run", "celery", "-A", "config", "worker", "--loglevel=INFO"]
