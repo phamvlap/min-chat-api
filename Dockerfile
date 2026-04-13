@@ -37,6 +37,7 @@ FROM base AS final
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV DJANGO_SETTINGS_MODULE=core.settings
+ENV PYTHONPATH="/app"
 
 # Install only runtime system packages for the final image.
 RUN apt-get update && apt-get install -y \
