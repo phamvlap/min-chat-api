@@ -10,6 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV UV_NO_CACHE=1
 
 # Install system build and runtime dependencies needed to compile Python packages.
 RUN apt-get update && apt-get install -y \
