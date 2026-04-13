@@ -12,4 +12,4 @@ kill_timeout = 120 # 2 minutes
   memory = "256mb"
 
 [experimental]
-  cmd = ["celery", "-A", "config", "worker", "--loglevel=INFO"]
+  cmd = ["uv", "run", "celery", "-A", "config", "worker", "--loglevel=INFO"]
