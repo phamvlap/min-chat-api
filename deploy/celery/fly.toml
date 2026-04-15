@@ -4,10 +4,10 @@ kill_signal = "SIGINT"
 kill_timeout = "5s"
 
 [processes]
-  worker = "uv run celery -A config worker --loglevel=INFO"
+  worker = "/app/.venv/bin/celery -A config worker --loglevel=INFO"
 
 [env]
-  DJANGO_SETTINGS_MODULE = "core.settings"
+  DJANGO_SETTINGS_MODULE = "config.settings"
   PYTHONPATH = "/app"
 
 [[vm]]
