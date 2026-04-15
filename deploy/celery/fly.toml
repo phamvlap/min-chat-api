@@ -6,9 +6,6 @@ kill_timeout = "5s"
 [processes]
   worker = "uv run celery -A config worker --loglevel=INFO"
 
-[[services]]
-  auto_stop_machines = "stop"
-
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
