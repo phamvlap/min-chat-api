@@ -1,7 +1,10 @@
 app = "mini-chat-celery"
 primary_region = "sin"
 kill_signal = "SIGINT"
-kill_timeout = 120 # 2 minutes
+kill_timeout = "5s"
+
+[processes]
+  worker = "uv run celery -A config worker --loglevel=INFO"
 
 [[services]]
   auto_stop_machines = "stop"
@@ -10,6 +13,3 @@ kill_timeout = 120 # 2 minutes
   cpu_kind = "shared"
   cpus = 1
   memory = "1gb"
-
-[experimental]
-  cmd = ["uv", "run", "celery", "-A", "config", "worker", "--loglevel=INFO"]
