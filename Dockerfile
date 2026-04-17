@@ -26,8 +26,7 @@ ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock ./
-COPY README.md ./
+COPY . .
 
 # Create the virtual environment from the locked dependency set.
 RUN uv sync --frozen --no-dev
