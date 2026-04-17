@@ -22,6 +22,7 @@ from base.views import (
     CompleteMultipartUploadAPIView,
     CreateMultipartUploadAPIView,
     CreatePresignedURLAPIView,
+    DramatiqHealthCheckAPIView,
     GetPresignedURLAPIView,
     GetPresignedURLForMultipartUploadAPIView,
     HealthCheckAPIView,
@@ -34,6 +35,11 @@ urlpatterns = [
         "celery/health/",
         CeleryHealthCheckAPIView.as_view(),
         name="celery-health-check-api",
+    ),
+    path(
+        "dramatiq/health/",
+        DramatiqHealthCheckAPIView.as_view(),
+        name="dramatiq-health-check-api",
     ),
     path("api/general/authentication/", include("modules.user.authentication.urls")),
     # Media upload related URLs

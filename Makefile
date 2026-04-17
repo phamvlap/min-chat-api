@@ -19,6 +19,7 @@ help:
 	@echo "  make celery             Start Celery worker"
 	@echo "  make celery-beat        Start Celery beat scheduler"
 	@echo "  make flower             Start Flower for monitoring Celery tasks"
+	@echo "  make dramatiq           Start Dramatiq worker"
 	@echo "  make help               Show this help menu"
 
 # Git commands
@@ -97,3 +98,7 @@ celery-beat:
 
 flower:
 	uv run celery -A config flower --port=5000
+
+# Dramatiq commands
+dramatiq:
+	uv run python manage.py rundramatiq

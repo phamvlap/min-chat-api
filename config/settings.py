@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "cacheops",
     "channels",
+    "django_dramatiq",
     *MODULES_INSTALLED_APPS,
 ]
 
@@ -296,3 +297,30 @@ if REDIS_USE_SSL:
         "ssl_cert_reqs": ssl.CERT_NONE,
         "ssl_check_hostname": False,
     }
+
+# Dramatiq configuration
+DRAMATIQ_BROKER = {
+    "BROKER": "dramatiq.brokers.redis.RedisBroker",
+    "OPTIONS": {
+        "url": REDIS_URL,
+    },
+}
+DRAMATIQ_RESULT_BACKEND = {
+    "BACKEND": "dramatiq.results.backends.redis.RedisBackend",
+    "BACKEND_OPTIONS": {
+        "url": REDIS_URL,
+    },
+    "MIDDLEWARE_OPTIONS": {
+        "result_ttl": 60 * 60 * 1000,  # 1 hour in milliseconds
+    },
+}
+DRAMATIQ_MIDDLEWARE = [
+    "dramatiq.middleware.Prometheus",
+    "dramatiq.middleware.AgeLimit",
+    "dramatiq.middleware.TimeLimit",
+    "dramatiq.middleware.Callbacks",
+    "dramatiq.middleware.Retries",
+    "django_dramatiq.middleware.DbConnectionsMiddleware",
+    "django_dramatiq.middleware.AdminMiddleware",
+]
+DRAMATIQ_TASKS_DATABASE = "default"

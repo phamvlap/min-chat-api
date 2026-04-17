@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db import IntegrityError, connections, models
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
+from dramatiq.results import ResultTimeout
 from kombu import Connection
 from redis import Redis
 from rest_framework.exceptions import APIException
@@ -23,6 +24,7 @@ from rest_framework.response import Response
 from base.constants import ViewAction
 from base.pagination import ItemIndexPagination
 from base.tasks import health_check_task
+from modules.testing.tasks import check_health_actor_task
 
 from .permission import IsAuthenticated
 from .serializers import (
@@ -169,6 +171,43 @@ class CeleryHealthCheckAPIView(RetrieveAPIView):
         except Exception as exc:
             return False, str(exc)
         else:
+            return True, None
+
+
+class DramatiqHealthCheckAPIView(RetrieveAPIView):
+    permission_classes = ()
+
+    def get(self, request, *args, **kwargs):
+        # Check if Dramatiq worker can execute tasks
+        task_execution_ok, task_execution_error = self._check_task_execution()
+
+        # Determine overall health status based on individual checks
+        overall_ok = task_execution_ok
+
+        return Response(
+            {
+                "name": "Dramatiq Worker",
+                "status": "healthy" if overall_ok else "unhealthy",
+                "health_checks": {
+                    "task_execution": {
+                        "status": "ok" if task_execution_ok else "error",
+                        "error": task_execution_error,
+                    },
+                },
+            }
+        )
+
+    def _check_task_execution(self) -> tuple[bool, str | None]:
+        try:
+            message = check_health_actor_task.send()
+            result = message.get_result(block=True, timeout=2 * 1000)  # Wait for up to 2 seconds
+        except ResultTimeout as exc:
+            return False, str(exc)
+        except Exception as exc:
+            return False, str(exc)
+        else:
+            if result != "ok":
+                return False, f"Unexpected task result: {result}"
             return True, None
 
 
