@@ -4,7 +4,7 @@ kill_signal = "SIGINT"
 kill_timeout = "5s"
 
 [processes]
-  worker = "/app/.venv/bin/celery -A config worker --loglevel=INFO"
+  worker = "celery -A config worker --loglevel=INFO"
 
 [env]
   DJANGO_SETTINGS_MODULE = "config.settings"
@@ -13,4 +13,4 @@ kill_timeout = "5s"
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory = "1gb"
+  memory = "512mb"
