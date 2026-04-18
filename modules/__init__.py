@@ -5,4 +5,5 @@ INSTALLED_APPS = [
     "modules.friend_request",
     "modules.chat",
     "modules.testing",
+    "modules.event_dispatch",
 ]
