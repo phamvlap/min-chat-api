@@ -13,7 +13,7 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 
 from base.authentication import ClerkAuthMiddleware
-from modules.chat.user.v1.routing import websocket_urlpatterns as chat_websocket_urlpatterns
+from modules.chat.websocket.routing import websocket_urlpatterns as chat_websocket_urlpatterns
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 

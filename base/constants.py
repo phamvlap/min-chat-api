@@ -39,6 +39,10 @@ class WebSocket:
         USER = "user.{user_id}"
         CONVERSATION = "conversation.{conversation_id}"
 
+    class ACKConfig:
+        MAX_RETRIES = 5
+        ACK_TIMEOUT = 5  # 5 seconds
+
 
 class UploadConstants:
     FILE_OPTIONS: ClassVar[dict[str, str]] = {
@@ -243,3 +247,8 @@ class ChatConstants:
                 class ConversationStarted(StrEnum):
                     EVENT_NAME = "conversation_started"
                     MESSAGE = "You have started a conversation with {recipient_name}."
+
+    class Message:
+        class ReactionStatus(StrEnum):
+            ADDED = "added"
+            REMOVED = "removed"
