@@ -13,3 +13,7 @@ class SendMessageSerializer(serializers.Serializer):
         choices=Message.Types.choices,
         default=Message.Types.TEXT,
     )
+
+
+class AcknowledgmentSerializer(serializers.Serializer):
+    event_dispatch_id = serializers.UUIDField()

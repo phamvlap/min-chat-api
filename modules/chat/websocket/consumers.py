@@ -141,6 +141,19 @@ class ChatConsumer(BaseWebsocketConsumer):
             delivered_before=delivered_before,
         )
 
+    def handle_acknowledgment(self, data: dict):
+        from modules.event_dispatch.services import EventDispatchService
+
+        from .serializers import AcknowledgmentSerializer
+
+        # Validate the incoming data
+        serializer = AcknowledgmentSerializer(data=data)
+        if not serializer.is_valid():
+            return
+        validated_data = serializer.validated_data
+
+        EventDispatchService().mark_event_as_acknowledged(validated_data["event_dispatch_id"])
+
     def chat_message(self, event: dict):
         self._dispatch_server_event(event)
 

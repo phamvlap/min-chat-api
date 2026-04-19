@@ -1,4 +1,7 @@
+from uuid import UUID
+
 from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 
 from base.constants import WebSocket
 from modules.event_dispatch.models import EventDispatch
@@ -29,3 +32,12 @@ class EventDispatchService:
 
         # Schedule the task to send the event
         send_event_task.delay(str(event_dispatch.id))
+
+    def mark_event_as_acknowledged(self, event_dispatch_id: str | UUID) -> None:
+        EventDispatch.objects.filter(
+            id=event_dispatch_id,
+            deleted_at=None,
+        ).update(
+            status=EventDispatch.Status.ACKED,
+            acked_at=timezone.now(),
+        )

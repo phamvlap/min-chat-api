@@ -26,6 +26,9 @@ class WebSocket:
             SEND_MESSAGE = "send_message"
             MESSAGE_DELIVERED = "message_delivered"
 
+        class Acknowledgment(StrEnum):
+            ACK = "ack"
+
     class ServerEvent:
         class Message(StrEnum):
             MESSAGE = "chat_message"

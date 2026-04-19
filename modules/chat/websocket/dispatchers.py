@@ -3,6 +3,7 @@ from base.constants import WebSocket
 CLIENT_EVENT_HANDLERS = {
     WebSocket.ClientEvent.Message.SEND_MESSAGE: "handle_send_message",
     WebSocket.ClientEvent.Message.MESSAGE_DELIVERED: "handle_message_delivered",
+    WebSocket.ClientEvent.Acknowledgment.ACK: "handle_acknowledgment",
 }
 
 SERVER_EVENT_HANDLERS = {

@@ -23,7 +23,11 @@ def send_event_task(event_dispatch_id: str):
         return
 
     # Send the event to the WebSocket group
-    WebSocketService().send_message(event_dispatch.group_name, event_dispatch.payload)
+    payload = {
+        **event_dispatch.payload,
+        "event_dispatch_id": str(event_dispatch.id),
+    }
+    WebSocketService().send_message(event_dispatch.group_name, payload)
 
     # Update the event dispatch record with retry and acknowledgment details
     now = timezone.now()
