@@ -1,5 +1,4 @@
-import json
-
+import orjson
 from channels.generic.websocket import WebsocketConsumer
 
 
@@ -14,7 +13,7 @@ class BaseWebsocketConsumer(WebsocketConsumer):
 
     def send_error(self, code: str, message: str) -> None:
         self.send(
-            text_data=json.dumps(
+            bytes_data=orjson.dumps(
                 {
                     "type": "error",
                     "code": code,

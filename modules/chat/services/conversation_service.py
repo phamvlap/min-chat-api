@@ -1,6 +1,6 @@
-import json
 from uuid import UUID
 
+import orjson
 from django.db.models import Count
 from django.utils import timezone
 
@@ -58,7 +58,7 @@ class ConversationService:
         message_data: dict = {
             "conversation": conversation,
             "sender": None,
-            "message": json.dumps(first_message_content),
+            "message": orjson.dumps(first_message_content).decode("utf-8"),
             "message_type": Message.Types.SYSTEM,
         }
 

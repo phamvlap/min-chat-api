@@ -1,5 +1,4 @@
-import json
-
+import orjson
 from asgiref.sync import async_to_sync
 
 from base.constants import WebSocket
@@ -72,7 +71,7 @@ class ChatConsumer(BaseWebsocketConsumer):
             async_to_sync(self.channel_layer.group_discard)(self.user_group_name, self.channel_name)
 
     def receive(self, text_data: str | None = None, bytes_data: bytes | None = None):
-        data: dict = json.loads(text_data) if text_data else {}
+        data: dict = orjson.loads(text_data) if text_data else {}
         event_type: str = data["type"]
 
         # Dispatch the client event to the appropriate handler
@@ -213,4 +212,4 @@ class ChatConsumer(BaseWebsocketConsumer):
         )
 
     def _send_message_to_client(self, message: dict) -> None:
-        self.send(text_data=json.dumps(message))
+        self.send(bytes_data=orjson.dumps(message))
