@@ -6,7 +6,6 @@ from modules.media.serializers import (
     NestedMediaInRetrieveSerializer,
 )
 from modules.user.models import User
-from services.caching_service import UserCachingService
 
 
 class RetrieveUserSerializer(serializers.ModelSerializer):
@@ -60,14 +59,6 @@ class UpdateUserSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         user: User = super().update(instance, validated_data)
-
-        # Clear cache for the updated user
-        user_caching_service = UserCachingService()
-
-        # Generate cache key for the user
-        cache_key: str = user_caching_service.generate_user_cache_key(str(user.clerk_user_id))
-        user_caching_service.delete(cache_key)
-
         return RetrieveUserSerializer(user).data
 
     def to_representation(self, instance):
