@@ -208,6 +208,32 @@ LOGGING = {
     },
 }
 
+
+# Utility functions
+def build_redis_url(
+    host: str,
+    port: int,
+    password: str,
+    username: str | None = None,
+    *,
+    use_ssl: bool = False,
+) -> str:
+    redis_protocol = "rediss" if use_ssl else "redis"
+
+    if username:
+        redis_url = f"{redis_protocol}://{username}:{password}@{host}:{port}"
+    else:
+        redis_url = f"{redis_protocol}://:{password}@{host}:{port}"
+
+    return redis_url
+
+
+def construct_celery_redis_url(redis_url: str, *, use_ssl: bool = False) -> str:
+    if use_ssl:
+        return f"{redis_url}/0?ssl_cert_reqs=CERT_NONE"
+    return f"{redis_url}/0"
+
+
 # Clerk configuration
 CLERK_API_URL = os.getenv("CLERK_API_URL")
 CLERK_JWKS_URL = os.getenv("CLERK_JWKS_URL")
@@ -221,12 +247,13 @@ REDIS_USERNAME = os.getenv("REDIS_USERNAME")
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 REDIS_USE_SSL = os.getenv("REDIS_USE_SSL", "False") == "True"
 
-REDIS_PROTOCOL = "rediss" if REDIS_USE_SSL else "redis"
-
-if REDIS_USERNAME:
-    REDIS_URL = f"{REDIS_PROTOCOL}://{REDIS_USERNAME}:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}"
-else:
-    REDIS_URL = f"{REDIS_PROTOCOL}://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}"
+REDIS_URL = build_redis_url(
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    password=REDIS_PASSWORD,
+    username=REDIS_USERNAME,
+    use_ssl=REDIS_USE_SSL,
+)
 
 # Cacheops configuration
 CACHEOPS_REDIS = REDIS_URL
@@ -276,7 +303,7 @@ S3_PRIVATE_BUCKET = SUPABASE_S3_PRIVATE_BUCKET
 S3_PUBLIC_BUCKET = SUPABASE_S3_PUBLIC_BUCKET
 
 # Celery configuration
-CELERY_URL = f"{REDIS_URL}/0?ssl_cert_reqs=CERT_NONE" if REDIS_USE_SSL else f"{REDIS_URL}/0"
+CELERY_URL = construct_celery_redis_url(redis_url=REDIS_URL, use_ssl=REDIS_USE_SSL)
 
 CELERY_BROKER_URL = CELERY_URL
 CELERY_RESULT_BACKEND = CELERY_URL
