@@ -54,7 +54,7 @@ class ChatConsumer(BaseWebsocketConsumer):
         async_to_sync(self.channel_layer.group_add)(self.conversation_group_name, self.channel_name)
 
         # Add the channel to the user group for sending user-specific events (e.g., message delivery receipts)
-        self.user_group_name = WebSocket.Group.USER.format(user_id=self.user.id)
+        self.user_group_name = WebSocket.Group.USER_IN_CONVERSATION.format(user_id=self.user.id)
         async_to_sync(self.channel_layer.group_add)(self.user_group_name, self.channel_name)
 
         # Accept the WebSocket connection

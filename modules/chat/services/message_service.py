@@ -153,7 +153,7 @@ class MessageService:
                 entity=conversation,
                 event_type=WebSocket.ServerEvent.Message.MESSAGE_DELIVERED,
                 payload=payload,
-                group_name=WebSocket.Group.USER.format(user_id=sender_id),
+                group_name=WebSocket.Group.USER_IN_CONVERSATION.format(user_id=sender_id),
             )
 
     def read_message(self, user: User, conversation_id: str | UUID, read_before: str) -> int:

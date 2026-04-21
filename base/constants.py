@@ -39,7 +39,7 @@ class WebSocket:
             REACTION_UPDATED = "chat_reaction_updated"
 
     class Group(StrEnum):
-        USER = "user.{user_id}"
+        USER_IN_CONVERSATION = "conversation.user.{user_id}"
         CONVERSATION = "conversation.{conversation_id}"
 
     class ACKConfig:
