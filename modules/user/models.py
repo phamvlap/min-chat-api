@@ -24,6 +24,9 @@ class User(AbstractBaseUser):
         related_name="avatar_user",
     )
 
+    # Track last activity
+    last_seen_at = models.DateTimeField(null=True, blank=True, default=None)
+
     @property
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
