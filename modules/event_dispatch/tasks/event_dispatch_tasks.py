@@ -9,7 +9,7 @@ from modules.event_dispatch.models import EventDispatch
 
 @shared_task
 def send_event_task(event_dispatch_id: str):
-    from modules.chat.services import WebSocketService
+    from services.websocket_service import WebSocketService
 
     # Get the event dispatch record
     event_dispatch = EventDispatch.objects.filter(id=event_dispatch_id, deleted_at=None).first()
