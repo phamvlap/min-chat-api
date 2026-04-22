@@ -137,7 +137,7 @@ class MessageService:
         messages = [msg_status.message for msg_status in messages_to_update_delivery]
 
         # Get unique sender IDs from the messages to send delivery notifications to the respective senders
-        sender_ids = {msg.sender.id for msg in messages}
+        sender_ids = {msg.sender.id for msg in messages if msg.sender}
 
         # Update message statuses to delivered for messages created before the specified timestamp
         messages_to_update_delivery.update(status=MessageStatus.StatusChoices.DELIVERED)

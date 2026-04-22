@@ -75,7 +75,7 @@ class HealthCheckAPIView(RetrieveAPIView):
         )
 
     def _check_databases(self) -> dict[str, dict[str, str | None]]:
-        db_health = {}
+        db_health: dict[str, dict[str, str | None]] = {}
 
         for alias in connections:
             try:

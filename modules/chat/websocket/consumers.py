@@ -1,9 +1,12 @@
+from typing import cast
+
 import orjson
 from asgiref.sync import async_to_sync
 
 from base.constants import WebSocket
 from base.consumers import BaseWebsocketConsumer
 from modules.chat.permisisons import IsMemberOfConversation
+from modules.user.models import User
 from utils.exceptions import extract_serializer_error
 
 from .dispatchers import CLIENT_EVENT_HANDLERS, SERVER_EVENT_HANDLERS
@@ -31,7 +34,11 @@ class ChatConsumer(BaseWebsocketConsumer):
             return
 
         # Assign current user
-        self.user = self.scope["user"]
+        if not self.scope["user"]:
+            self.close()
+            return
+
+        self.user = cast(User, self.scope["user"])
 
         # Get conversation ID from URL route
         conversation_id = self.scope["url_route"]["kwargs"]["conversation_id"]

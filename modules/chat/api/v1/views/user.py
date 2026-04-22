@@ -354,7 +354,8 @@ class DeleteMessageAPIView(BaseDestroyAPIView):
         )
 
     def destroy(self, request, *args, **kwargs):
-        conversation_id = kwargs.get("conversation_id")
+        conversation_id = kwargs["conversation_id"]
+
         user = cast(User, self.request.user)
 
         # Validate that the conversation exists and is not deleted

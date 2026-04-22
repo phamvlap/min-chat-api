@@ -53,6 +53,9 @@ class PinMessageSerializer(serializers.ModelSerializer):
         conversation_id = view.kwargs.get("conversation_id") if view else None
         user: User | None = view.request.user if view and view.request else None
 
+        if not conversation_id:
+            raise serializers.ValidationError("Conversation ID is required in the URL.")
+
         # Validate that the conversation exists and is not deleted
         conversation = ConversationService().get_conversation_by_id(conversation_id)
         if not conversation:
@@ -116,6 +119,9 @@ class UnpinMessageSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         view = self.context.get("view")
         conversation_id = view.kwargs.get("conversation_id") if view else None
+
+        if not conversation_id:
+            raise serializers.ValidationError("Conversation ID is required in the URL.")
 
         # Validate that the conversation exists and is not deleted
         conversation = ConversationService().get_conversation_by_id(conversation_id)

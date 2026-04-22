@@ -241,10 +241,10 @@ CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
 CLERK_ISSUER = os.getenv("CLERK_ISSUER")
 
 # Redis configuration
-REDIS_HOST = os.getenv("REDIS_HOST")
-REDIS_PORT = os.getenv("REDIS_PORT")
+REDIS_HOST = os.getenv("REDIS_HOST", "")
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 REDIS_USERNAME = os.getenv("REDIS_USERNAME")
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
 REDIS_USE_SSL = os.getenv("REDIS_USE_SSL", "False") == "True"
 
 REDIS_URL = build_redis_url(

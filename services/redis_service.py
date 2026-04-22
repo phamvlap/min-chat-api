@@ -1,3 +1,5 @@
+from collections.abc import Awaitable
+from inspect import isawaitable
 from typing import Any
 
 import orjson
@@ -6,7 +8,7 @@ from django.conf import settings
 
 
 class RedisClient:
-    _client = None
+    _client: redis.Redis | None = None
 
     @classmethod
     def get_client(cls) -> redis.Redis:
@@ -19,9 +21,16 @@ class RedisService:
     def __init__(self):
         self.client = RedisClient.get_client()
 
+    def _ensure_sync_result[T](self, result: Awaitable[T] | T) -> T:
+        if isawaitable(result):
+            raise RuntimeError(
+                "RedisService expects a synchronous redis client, but got an awaitable result."
+            )
+        return result
+
     def ping(self) -> bool:
         try:
-            return self.client.ping()
+            return self._ensure_sync_result(self.client.ping())
         except redis.RedisError:
             return False
 
@@ -31,85 +40,100 @@ class RedisService:
         )
         return ":".join(key_parts)
 
-    def set(self, key: str, value: Any, ttl: int = 300):
+    def set(self, key: str, value: Any, ttl: int = 300) -> Any:
         data = orjson.dumps(value)
-        return self.client.set(key, data, ex=ttl)
+        return self._ensure_sync_result(self.client.set(key, data, ex=ttl))
 
     def get(self, key: str) -> Any | None:
-        value = self.client.get(key)
+        value = self._ensure_sync_result(self.client.get(key))
         return orjson.loads(value) if value else None
 
-    def delete(self, key: str):
-        return self.client.delete(key)
+    def delete(self, key: str) -> Any:
+        return self._ensure_sync_result(self.client.delete(key))
 
     def exists(self, key: str) -> bool:
-        return self.client.exists(key) > 0
+        return self._ensure_sync_result(self.client.exists(key)) > 0
 
-    def hash_set(self, name: str, key: str, value: Any):
-        data = orjson.dumps(value)
-        return self.client.hset(name, key, data)
+    def hash_set(self, name: str, key: str, value: Any) -> int:
+        data = orjson.dumps(value).decode("utf-8")
+        return self._ensure_sync_result(self.client.hset(name, key, data))
 
     def hash_get(self, name: str, key: str) -> Any | None:
-        value = self.client.hget(name, key)
+        value = self._ensure_sync_result(self.client.hget(name, key))
         return orjson.loads(value) if value else None
 
-    def hash_delete(self, name: str, key: str):
-        return self.client.hdel(name, key)
+    def hash_delete(self, name: str, key: str) -> int:
+        return self._ensure_sync_result(self.client.hdel(name, key))
 
     def hash_exists(self, name: str, key: str) -> bool:
-        return self.client.hexists(name, key)
+        return self._ensure_sync_result(self.client.hexists(name, key))
 
     def hash_get_all(self, name: str) -> dict[str, Any]:
-        raw_data = self.client.hgetall(name)
+        raw_data: dict = self._ensure_sync_result(self.client.hgetall(name))
         return {k.decode(): orjson.loads(v) for k, v in raw_data.items()}
 
-    def set_add(self, name: str, *values):
+    def set_add(self, name: str, *values) -> int:
         data = [orjson.dumps(value) for value in values]
-        return self.client.sadd(name, *data)
+        return self._ensure_sync_result(self.client.sadd(name, *data))
 
     def set_members(self, name: str):
-        raw_members = self.client.smembers(name)
+        raw_members = self._ensure_sync_result(self.client.smembers(name))
         return {orjson.loads(member) for member in raw_members}
 
-    def set_remove(self, name: str, *values):
+    def set_remove(self, name: str, *values) -> int:
         data = [orjson.dumps(value) for value in values]
-        return self.client.srem(name, *data)
+        return self._ensure_sync_result(self.client.srem(name, *data))
 
-    def set_exists(self, name: str, value: Any) -> bool:
+    def set_exists(self, name: str, value: Any) -> int:
+        data = orjson.dumps(value).decode("utf-8")
+        return self._ensure_sync_result(self.client.sismember(name, data))
+
+    def left_push(self, key: str, value: Any) -> int:
         data = orjson.dumps(value)
-        return self.client.sismember(name, data)
+        return self._ensure_sync_result(self.client.lpush(key, data))
 
-    def left_push(self, key: str, value: Any):
+    def right_push(self, key: str, value: Any) -> int:
         data = orjson.dumps(value)
-        return self.client.lpush(key, data)
+        return self._ensure_sync_result(self.client.rpush(key, data))
 
-    def right_push(self, key: str, value: Any):
-        data = orjson.dumps(value)
-        return self.client.rpush(key, data)
+    def left_pop(self, key: str) -> str | list | None:
+        value: str | list | None = self._ensure_sync_result(self.client.lpop(key))
 
-    def left_pop(self, key: str) -> Any | None:
-        value = self.client.lpop(key)
-        return orjson.loads(value) if value else None
+        if value is not None:
+            if isinstance(value, str):
+                return orjson.loads(value)
 
-    def right_pop(self, key: str) -> Any | None:
-        value = self.client.rpop(key)
-        return orjson.loads(value) if value else None
+            if isinstance(value, list):
+                return [orjson.loads(item) for item in value]
+
+        return None
+
+    def right_pop(self, key: str) -> str | list | None:
+        value: str | list | None = self._ensure_sync_result(self.client.rpop(key))
+
+        if value is not None:
+            if isinstance(value, str):
+                return orjson.loads(value)
+
+            if isinstance(value, list):
+                return [orjson.loads(item) for item in value]
+        return None
 
     def list_range(self, key: str, start: int = 0, end: int = -1) -> list[Any]:
-        raw_values = self.client.lrange(key, start, end)
+        raw_values = self._ensure_sync_result(self.client.lrange(key, start, end))
         return [orjson.loads(value) for value in raw_values]
 
     def expire(self, key: str, ttl: int):
         return self.client.expire(key, ttl)
 
     def ttl(self, key: str) -> int:
-        return self.client.ttl(key)
+        return self._ensure_sync_result(self.client.ttl(key))
 
     def increment(self, key: str, amount: int = 1) -> int:
-        return self.client.incr(key, amount)
+        return self._ensure_sync_result(self.client.incr(key, amount))
 
     def decrement(self, key: str, amount: int = 1) -> int:
-        return self.client.decr(key, amount)
+        return self._ensure_sync_result(self.client.decr(key, amount))
 
     def flushdb(self):
         return self.client.flushdb()

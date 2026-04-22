@@ -29,6 +29,9 @@ class ReactMessageSerializer(serializers.ModelSerializer):
         view = self.context.get("view")
         conversation_id = view.kwargs.get("conversation_id") if view else None
 
+        if not conversation_id:
+            raise serializers.ValidationError("Conversation ID is required in the URL.")
+
         # Validate that the conversation exists and is not deleted
         conversation = ConversationService().get_conversation_by_id(conversation_id)
         if not conversation:
@@ -50,6 +53,9 @@ class ReactMessageSerializer(serializers.ModelSerializer):
         reaction_type: str = validated_data.pop("reaction_type")
         view = self.context.get("view")
         user: User | None = view.request.user if view and view.request else None
+
+        if not user:
+            raise serializers.ValidationError("Authentication credentials were not provided.")
 
         reaction_status = MessageReactionService().toggle_reaction(user, message, reaction_type)
 

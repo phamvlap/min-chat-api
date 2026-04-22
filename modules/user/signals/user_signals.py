@@ -8,4 +8,4 @@ from modules.user.services import UserService
 @receiver(post_save, sender=User)
 def user_updated(sender, instance: User, created: bool, **kwargs):  # noqa: ARG001
     # Clear cache for the updated user
-    UserService().clear_user_cache(instance.clerk_user_id)
+    UserService().clear_user_cache(str(instance.clerk_user_id))
