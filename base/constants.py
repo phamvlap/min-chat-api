@@ -38,9 +38,18 @@ class WebSocket:
             MESSAGE_DELETED_FOR_EVERYONE = "chat_message_deleted_for_everyone"
             REACTION_UPDATED = "chat_reaction_updated"
 
+        class Presence(StrEnum):
+            USER_ONLINE = "user_online"
+            USER_OFFLINE = "user_offline"
+
+        class Heartbeat(StrEnum):
+            PING = "ping"
+
     class Group(StrEnum):
         USER_IN_CONVERSATION = "conversation.user.{user_id}"
         CONVERSATION = "conversation.{conversation_id}"
+        USER = "user.{user_id}"
+        USER_PRESENCE = "user.presence.{user_id}"
 
     class ACKConfig:
         MAX_RETRIES = 5

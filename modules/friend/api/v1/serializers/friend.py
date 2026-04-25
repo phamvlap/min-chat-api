@@ -1,11 +1,11 @@
 from rest_framework import serializers
 
 from modules.friend.models import Friend
-from modules.user.serializers import NestedUserSerializer
+from modules.user.serializers import NestedRestrictedUserSerializer
 
 
 class ListFriendSerializer(serializers.ModelSerializer):
-    friend = NestedUserSerializer(read_only=True)
+    friend = NestedRestrictedUserSerializer(read_only=True)
 
     class Meta:
         model = Friend
@@ -14,7 +14,7 @@ class ListFriendSerializer(serializers.ModelSerializer):
 
 
 class RetrieveFriendSerializer(serializers.ModelSerializer):
-    friend = NestedUserSerializer(read_only=True)
+    friend = NestedRestrictedUserSerializer(read_only=True)
 
     class Meta:
         model = Friend

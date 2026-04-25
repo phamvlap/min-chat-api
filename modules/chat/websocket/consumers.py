@@ -219,4 +219,4 @@ class ChatConsumer(BaseWebsocketConsumer):
         )
 
     def _send_message_to_client(self, message: dict) -> None:
-        self.send(bytes_data=orjson.dumps(message))
+        self.send(text_data=orjson.dumps(message).decode("utf-8"))

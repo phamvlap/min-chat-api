@@ -4,7 +4,7 @@ from modules.chat.models import Conversation, ConversationMember
 from modules.chat.services import ConversationService
 from modules.media.serializers import NestedMediaInRetrieveSerializer
 from modules.user.models import User
-from modules.user.serializers import NestedUserSerializer
+from modules.user.serializers import NestedRestrictedUserSerializer
 
 from .message import NestedMessageSerializer
 
@@ -60,7 +60,7 @@ class CreateDirectConversationSerializer(serializers.ModelSerializer):
 
 
 class NestedConversationMemberSerializer(serializers.ModelSerializer):
-    user = NestedUserSerializer(read_only=True)
+    user = NestedRestrictedUserSerializer(read_only=True)
     last_visible_message = NestedMessageSerializer(read_only=True)
 
     class Meta:
@@ -71,7 +71,7 @@ class NestedConversationMemberSerializer(serializers.ModelSerializer):
 
 class ListConversationSerializer(serializers.ModelSerializer):
     avatar = NestedMediaInRetrieveSerializer(read_only=True)
-    owner = NestedUserSerializer(read_only=True)
+    owner = NestedRestrictedUserSerializer(read_only=True)
     members = NestedConversationMemberSerializer(
         many=True,
         read_only=True,
@@ -99,7 +99,7 @@ class ListConversationSerializer(serializers.ModelSerializer):
 
 class RetrieveConversationSerializer(serializers.ModelSerializer):
     avatar = NestedMediaInRetrieveSerializer(read_only=True)
-    owner = NestedUserSerializer(read_only=True)
+    owner = NestedRestrictedUserSerializer(read_only=True)
     members = NestedConversationMemberSerializer(
         many=True,
         read_only=True,

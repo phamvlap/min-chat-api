@@ -4,7 +4,7 @@ from base.constants import ResponseStatus
 from modules.chat.models import Message, MessageReaction
 from modules.chat.services import ConversationService, MessageReactionService, MessageService
 from modules.user.models import User
-from modules.user.serializers import NestedUserSerializer
+from modules.user.serializers import NestedRestrictedUserSerializer
 
 
 class MessageReactionInMessageListSerializer(serializers.ModelSerializer):
@@ -69,7 +69,7 @@ class ReactMessageSerializer(serializers.ModelSerializer):
 
 
 class ListMessageReactionSerializer(serializers.ModelSerializer):
-    user = NestedUserSerializer(read_only=True)
+    user = NestedRestrictedUserSerializer(read_only=True)
 
     class Meta:
         model = MessageReaction

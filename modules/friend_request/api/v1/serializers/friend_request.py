@@ -5,7 +5,7 @@ from modules.friend.services import FriendService
 from modules.friend_request.models import FriendRequest
 from modules.friend_request.services import FriendRequestService
 from modules.user.models import User
-from modules.user.serializers import NestedUserSerializer
+from modules.user.serializers import NestedPublicUserSerializer
 
 
 class CreateFriendRequestSerializer(serializers.ModelSerializer):
@@ -51,8 +51,8 @@ class CreateFriendRequestSerializer(serializers.ModelSerializer):
 
 
 class ListFriendRequestSerializer(serializers.ModelSerializer):
-    sender = NestedUserSerializer(read_only=True)
-    receiver = NestedUserSerializer(read_only=True)
+    sender = NestedPublicUserSerializer(read_only=True)
+    receiver = NestedPublicUserSerializer(read_only=True)
 
     class Meta:
         model = FriendRequest
@@ -61,8 +61,8 @@ class ListFriendRequestSerializer(serializers.ModelSerializer):
 
 
 class RetrieveFriendRequestSerializer(serializers.ModelSerializer):
-    sender = NestedUserSerializer(read_only=True)
-    receiver = NestedUserSerializer(read_only=True)
+    sender = NestedPublicUserSerializer(read_only=True)
+    receiver = NestedPublicUserSerializer(read_only=True)
 
     class Meta:
         model = FriendRequest

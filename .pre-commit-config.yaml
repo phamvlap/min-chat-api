@@ -37,6 +37,7 @@ repos:
           - psycopg2
           - celery
           - django-dramatiq
+          - orjson
         args: [--no-strict-optional, --ignore-missing-imports, --config-file=mypy.ini]
 
   - repo: https://github.com/commitizen-tools/commitizen

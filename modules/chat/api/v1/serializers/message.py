@@ -1,13 +1,13 @@
 from rest_framework import serializers
 
 from modules.chat.models import Message
-from modules.user.serializers import NestedUserSerializer
+from modules.user.serializers import NestedRestrictedUserSerializer
 
 from .message_reaction import MessageReactionInMessageListSerializer
 
 
 class NestedMessageSerializer(serializers.ModelSerializer):
-    sender = NestedUserSerializer(read_only=True)
+    sender = NestedRestrictedUserSerializer(read_only=True)
 
     class Meta:
         model = Message
@@ -33,7 +33,7 @@ class NestedMessageSerializer(serializers.ModelSerializer):
 
 
 class ListMessageSerializer(serializers.ModelSerializer):
-    sender = NestedUserSerializer(read_only=True)
+    sender = NestedRestrictedUserSerializer(read_only=True)
     replied_to = "self"  # Recursive relationship for nested replies
     status = serializers.CharField(read_only=True)
     is_pinned = serializers.BooleanField(read_only=True)

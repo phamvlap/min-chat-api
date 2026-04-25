@@ -6,7 +6,7 @@ from modules.chat.models import PinnedMessage
 from modules.chat.services import ConversationService, MessageService, PinnedMessageService
 from modules.event_dispatch.services import EventDispatchService
 from modules.user.models import User
-from modules.user.serializers import NestedUserSerializer
+from modules.user.serializers import NestedPublicUserSerializer, NestedRestrictedUserSerializer
 
 
 class ListPinnedMessageSerializer(serializers.ModelSerializer):
@@ -27,7 +27,9 @@ class ListPinnedMessageSerializer(serializers.ModelSerializer):
         creator = mapped_creators.get(str(instance.created_by))
 
         # Add creator information to the representation if available
-        representation["creator"] = NestedUserSerializer(creator).data if creator else None
+        representation["creator"] = (
+            NestedRestrictedUserSerializer(creator).data if creator else None
+        )
 
         return representation
 
@@ -91,7 +93,7 @@ class PinMessageSerializer(serializers.ModelSerializer):
             .select_related("avatar")
             .first()
         )
-        serialized_data["creator"] = NestedUserSerializer(creator).data if creator else None
+        serialized_data["creator"] = NestedPublicUserSerializer(creator).data if creator else None
 
         # Dispatch the pinned message event to the conversation group via Channels
         EventDispatchService().dispatch_event(

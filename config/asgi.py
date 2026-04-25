@@ -14,16 +14,22 @@ from django.core.asgi import get_asgi_application
 
 from base.authentication import ClerkAuthMiddleware
 from modules.chat.websocket.routing import websocket_urlpatterns as chat_websocket_urlpatterns
+from modules.user.websocket.routing import websocket_urlpatterns as user_websocket_urlpatterns
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 asgi_http_application = get_asgi_application()
 
+websocket_urlpatterns = [
+    *chat_websocket_urlpatterns,
+    *user_websocket_urlpatterns,
+]
+
 application = ProtocolTypeRouter(
     {
         "http": asgi_http_application,
         "websocket": ClerkAuthMiddleware(
-            URLRouter(chat_websocket_urlpatterns),
+            URLRouter(websocket_urlpatterns),
         ),
     }
 )
