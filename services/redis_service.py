@@ -96,8 +96,8 @@ class RedisService:
         data = orjson.dumps(value)
         return self._ensure_sync_result(self.client.rpush(key, data))
 
-    def left_pop(self, key: str) -> str | list | None:
-        value: str | list | None = self._ensure_sync_result(self.client.lpop(key))
+    def left_pop(self, key: str) -> Any:
+        value = self._ensure_sync_result(self.client.lpop(key))
 
         if value is not None:
             if isinstance(value, str):
@@ -108,8 +108,8 @@ class RedisService:
 
         return None
 
-    def right_pop(self, key: str) -> str | list | None:
-        value: str | list | None = self._ensure_sync_result(self.client.rpop(key))
+    def right_pop(self, key: str) -> Any:
+        value = self._ensure_sync_result(self.client.rpop(key))
 
         if value is not None:
             if isinstance(value, str):
