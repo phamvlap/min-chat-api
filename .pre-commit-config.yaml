@@ -30,7 +30,6 @@ repos:
           - djangorestframework-stubs
           - types-requests
           - types-pytz
-          - python-dotenv
           - django-cors-headers
           - django-cacheops
           - channels
