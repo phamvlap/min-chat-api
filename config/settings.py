@@ -10,29 +10,27 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-import os
 import ssl
 from pathlib import Path
 
-from dotenv import load_dotenv
-
+from config.utils import get_env, get_env_list, load_env
 from modules import INSTALLED_APPS as MODULES_INSTALLED_APPS
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(BASE_DIR / ".env")  # Load environment variables from .env file
+load_env(BASE_DIR / ".env")  # Load environment variables from .env file
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+SECRET_KEY = get_env("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = get_env("DEBUG", bool, default=False)
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = get_env_list("ALLOWED_HOSTS")
 
 CORS_ALLOW_HEADERS = ["*"]
 CORS_ALLOW_ALL_ORIGINS = True
@@ -96,11 +94,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
+        "NAME": get_env("DB_NAME"),
+        "USER": get_env("DB_USER"),
+        "PASSWORD": get_env("DB_PASSWORD"),
+        "HOST": get_env("DB_HOST"),
+        "PORT": get_env("DB_PORT"),
     },
 }
 
@@ -163,7 +161,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 # API environment
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+ENVIRONMENT = get_env("ENVIRONMENT", default="development")
 
 # Logging configuration
 LOGGING = {
@@ -235,17 +233,17 @@ def construct_celery_redis_url(redis_url: str, *, use_ssl: bool = False) -> str:
 
 
 # Clerk configuration
-CLERK_API_URL = os.getenv("CLERK_API_URL")
-CLERK_JWKS_URL = os.getenv("CLERK_JWKS_URL")
-CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
-CLERK_ISSUER = os.getenv("CLERK_ISSUER")
+CLERK_API_URL = get_env("CLERK_API_URL")
+CLERK_JWKS_URL = get_env("CLERK_JWKS_URL")
+CLERK_SECRET_KEY = get_env("CLERK_SECRET_KEY")
+CLERK_ISSUER = get_env("CLERK_ISSUER")
 
 # Redis configuration
-REDIS_HOST = os.getenv("REDIS_HOST", "")
-REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
-REDIS_USERNAME = os.getenv("REDIS_USERNAME")
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
-REDIS_USE_SSL = os.getenv("REDIS_USE_SSL", "False") == "True"
+REDIS_HOST = get_env("REDIS_HOST", default="")
+REDIS_PORT = get_env("REDIS_PORT", int, default=6379)
+REDIS_USERNAME = get_env("REDIS_USERNAME")
+REDIS_PASSWORD = get_env("REDIS_PASSWORD", default="")
+REDIS_USE_SSL = get_env("REDIS_USE_SSL", bool, default=False)
 
 REDIS_URL = build_redis_url(
     host=REDIS_HOST,
@@ -284,15 +282,15 @@ CHANNEL_LAYERS = {
 ASGI_APPLICATION = "config.asgi.application"
 
 # Supabase configuration
-SUPABASE_PROJECT_URL = os.getenv("SUPABASE_PROJECT_URL")
+SUPABASE_PROJECT_URL = get_env("SUPABASE_PROJECT_URL")
 
 # Supabase storage configuration
-SUPABASE_S3_ENDPOINT_URL = os.getenv("SUPABASE_S3_ENDPOINT_URL")
-SUPABASE_S3_REGION = os.getenv("SUPABASE_S3_REGION")
-SUPABASE_S3_ACCESS_KEY_ID = os.getenv("SUPABASE_S3_ACCESS_KEY_ID")
-SUPABASE_S3_SECRET_ACCESS_KEY = os.getenv("SUPABASE_S3_SECRET_ACCESS_KEY")
-SUPABASE_S3_PRIVATE_BUCKET = os.getenv("SUPABASE_S3_PRIVATE_BUCKET")
-SUPABASE_S3_PUBLIC_BUCKET = os.getenv("SUPABASE_S3_PUBLIC_BUCKET")
+SUPABASE_S3_ENDPOINT_URL = get_env("SUPABASE_S3_ENDPOINT_URL")
+SUPABASE_S3_REGION = get_env("SUPABASE_S3_REGION")
+SUPABASE_S3_ACCESS_KEY_ID = get_env("SUPABASE_S3_ACCESS_KEY_ID")
+SUPABASE_S3_SECRET_ACCESS_KEY = get_env("SUPABASE_S3_SECRET_ACCESS_KEY")
+SUPABASE_S3_PRIVATE_BUCKET = get_env("SUPABASE_S3_PRIVATE_BUCKET")
+SUPABASE_S3_PUBLIC_BUCKET = get_env("SUPABASE_S3_PUBLIC_BUCKET")
 
 # S3 storage configuration
 S3_ENDPOINT_URL = SUPABASE_S3_ENDPOINT_URL
