@@ -216,3 +216,8 @@ class CompleteMultipartUploadSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         return instance
+
+
+# Serializers for WebSocket
+class AcknowledgmentSerializer(serializers.Serializer):
+    event_dispatch_id = serializers.UUIDField()

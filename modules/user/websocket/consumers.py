@@ -12,6 +12,8 @@ from modules.user.websocket.dispatchers import CLIENT_EVENT_HANDLERS, SERVER_EVE
 
 class UserPresenceConsumer(BaseWebsocketConsumer):
     permission_classes = (IsWebsocketUser,)
+    client_event_handlers = CLIENT_EVENT_HANDLERS
+    server_event_handlers = SERVER_EVENT_HANDLERS
 
     def __init__(self, *args, **kwargs):
         from modules.user.services import PresenceService
@@ -79,7 +81,7 @@ class UserPresenceConsumer(BaseWebsocketConsumer):
         event_type: str = data["type"]
 
         # Dispatch the client event to the appropriate handler
-        self._dispatch_client_event(event_type, data)
+        self.dispatch_client_event(event_type=event_type, data=data)
 
     def disconnect(self, close_code):
         # Leave the user group
@@ -104,53 +106,21 @@ class UserPresenceConsumer(BaseWebsocketConsumer):
         if just_went_offline:
             self.presence_service.broadcast_offline_status(self.user.id)
 
-    def handle_acknowledgment(self, data: dict):
-        from modules.event_dispatch.services import EventDispatchService
-
-        from .serializers import AcknowledgmentSerializer
-
-        # Validate the incoming data
-        serializer = AcknowledgmentSerializer(data=data)
-        if not serializer.is_valid():
-            return
-        validated_data = serializer.validated_data
-
-        EventDispatchService().mark_event_as_acknowledged(validated_data["event_dispatch_id"])
-
     def user_online(self, event):
-        self._dispatch_server_event(event)
+        self.dispatch_server_event(event)
 
     def handle_user_online(self, event):
-        self._send_message_to_client(event)
+        self.send_message(event)
 
     def user_offline(self, event):
-        self._dispatch_server_event(event)
+        self.dispatch_server_event(event)
 
     def handle_user_offline(self, event):
-        self._send_message_to_client(event)
+        self.send_message(event)
 
     def ping(self, event):
-        self._dispatch_server_event(event)
+        self.dispatch_server_event(event)
 
     def pong(self, event):
         # Just update the user's presence without sending any message back to the client
         self.presence_service.heartbeat(self.user.id)
-
-    def _dispatch_client_event(self, event_type: str, data: dict) -> None:
-        self.dispatch_event(
-            CLIENT_EVENT_HANDLERS,
-            event_type=event_type,
-            data=data,
-        )
-
-    def _dispatch_server_event(self, event: dict) -> None:
-        event_type: str | None = event.get("type")
-
-        self.dispatch_event(
-            SERVER_EVENT_HANDLERS,
-            event_type=event_type if event_type else "",
-            data=event,
-        )
-
-    def _send_message_to_client(self, message: dict) -> None:
-        self.send(text_data=orjson.dumps(message).decode("utf-8"))
