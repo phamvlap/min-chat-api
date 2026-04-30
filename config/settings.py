@@ -64,6 +64,8 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "base.middlewares.RequestLoggingMiddleware",
+    "base.middlewares.RequestTimingMiddleware",
+    "base.middlewares.CorrelationIdMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -167,28 +169,32 @@ ENVIRONMENT = get_env("ENVIRONMENT", default="development")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "formatters": {
-        "detailed": {
-            "format": ("[%(levelname)s] %(asctime)s | %(message)s"),
-        },
-        "simple": {
-            "format": ("[%(levelname)s] %(asctime)s | %(message)s"),
-        },
-    },
     "filters": {
         "require_debug_true": {
             "()": "django.utils.log.RequireDebugTrue",
+        },
+        "correlation_id": {
+            "()": "base.logging.CorrelationIdFilter",
+        },
+    },
+    "formatters": {
+        "detailed": {
+            "format": ("[%(levelname)s] [%(correlation_id)s] %(asctime)s | %(message)s"),
+        },
+        "simple": {
+            "format": ("[%(levelname)s] [%(correlation_id)s] %(asctime)s | %(message)s"),
         },
     },
     "handlers": {
         "console": {
             "level": "DEBUG",
-            "filters": ["require_debug_true"],
+            "filters": ["require_debug_true", "correlation_id"],
             "class": "logging.StreamHandler",
             "formatter": "detailed",
         },
         "simple_console": {
             "level": "INFO",
+            "filters": ["correlation_id"],
             "class": "logging.StreamHandler",
             "formatter": "simple",
         },
