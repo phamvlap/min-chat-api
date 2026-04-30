@@ -4,6 +4,7 @@ from .message_reation_service import MessageReactionService
 from .message_service import MessageService
 from .message_visibility_service import MessageVisibilityService
 from .pinned_message_service import PinnedMessageService
+from .user_alias_service import UserAliasService
 
 __all__ = [
     "ConversationMemberService",
@@ -12,4 +13,5 @@ __all__ = [
     "MessageService",
     "MessageVisibilityService",
     "PinnedMessageService",
+    "UserAliasService",
 ]

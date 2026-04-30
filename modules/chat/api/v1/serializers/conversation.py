@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from modules.chat.models import Conversation, ConversationMember
+from modules.chat.api.v1.serializers.member import NestedConversationMemberSerializer
+from modules.chat.models import Conversation
 from modules.chat.services import ConversationService
 from modules.media.serializers import NestedMediaInRetrieveSerializer
 from modules.user.models import User
@@ -57,16 +58,6 @@ class CreateDirectConversationSerializer(serializers.ModelSerializer):
         destination_user: User = validated_data.pop("destination_user")
 
         return ConversationService().create_direct_conversation(user, destination_user)
-
-
-class NestedConversationMemberSerializer(serializers.ModelSerializer):
-    user = NestedRestrictedUserSerializer(read_only=True)
-    last_visible_message = NestedMessageSerializer(read_only=True)
-
-    class Meta:
-        model = ConversationMember
-        fields = ("id", "user", "role", "muted_until", "last_read_at", "last_visible_message")
-        read_only_fields = fields
 
 
 class ListConversationSerializer(serializers.ModelSerializer):

@@ -10,6 +10,7 @@ from modules.chat.api.v1.views.user import (
     ReactMessageAPIView,
     ReadMessageAPIView,
     RetrieveConversationAPIView,
+    SetNicknameForMemberInConversationAPIView,
     UnpinMessageAPIView,
 )
 
@@ -67,6 +68,11 @@ urlpatterns = [
                     "<uuid:conversation_id>/messages/<uuid:message_id>/reactions/",
                     ListMessageReactionAPIView.as_view(),
                     name="list-message-reactions",
+                ),
+                path(
+                    "<uuid:conversation_id>/members/<uuid:member_id>/nickname/",
+                    SetNicknameForMemberInConversationAPIView.as_view(),
+                    name="set-nickname-for-member-in-conversation",
                 ),
             ]
         ),

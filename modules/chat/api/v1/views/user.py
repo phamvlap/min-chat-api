@@ -34,6 +34,7 @@ from modules.chat.api.v1.serializers.conversation import (
     ListConversationSerializer,
     RetrieveConversationSerializer,
 )
+from modules.chat.api.v1.serializers.member import SetNicknameForMemberInConversationSerializer
 from modules.chat.api.v1.serializers.message import ListMessageSerializer, ReadMessageSerializer
 from modules.chat.api.v1.serializers.message_reaction import (
     ListMessageReactionSerializer,
@@ -52,6 +53,7 @@ from modules.chat.models import (
     MessageReaction,
     MessageStatus,
     PinnedMessage,
+    UserAlias,
 )
 from modules.chat.services import ConversationService, MessageService, MessageVisibilityService
 from modules.user.models import User
@@ -106,9 +108,25 @@ class ListConversationAPIView(BaseListAPIView):
             .prefetch_related(
                 Prefetch(
                     "conversation_member",
-                    queryset=ConversationMember.objects.filter(deleted_at=None).select_related(
-                        "user__avatar",
-                        "last_visible_message__sender__avatar",
+                    queryset=(
+                        ConversationMember.objects.filter(deleted_at=None)
+                        .annotate(
+                            nickname=Coalesce(
+                                Subquery(
+                                    UserAlias.objects.filter(
+                                        user=user,
+                                        target_member_id=OuterRef("id"),
+                                        deleted_at=None,
+                                    ).values("nickname")[:1],
+                                    output_field=CharField(),
+                                ),
+                                Value(None, output_field=CharField()),
+                            )
+                        )
+                        .select_related(
+                            "user__avatar",
+                            "last_visible_message__sender__avatar",
+                        )
                     ),
                 )
             )
@@ -158,9 +176,25 @@ class RetrieveConversationAPIView(BaseRetrieveAPIView):
             .prefetch_related(
                 Prefetch(
                     "conversation_member",
-                    queryset=ConversationMember.objects.filter(deleted_at=None).select_related(
-                        "user__avatar",
-                        "last_visible_message__sender__avatar",
+                    queryset=(
+                        ConversationMember.objects.filter(deleted_at=None)
+                        .annotate(
+                            nickname=Coalesce(
+                                Subquery(
+                                    UserAlias.objects.filter(
+                                        user=user,
+                                        target_member_id=OuterRef("id"),
+                                        deleted_at=None,
+                                    ).values("nickname")[:1],
+                                    output_field=CharField(),
+                                ),
+                                Value(None, output_field=CharField()),
+                            )
+                        )
+                        .select_related(
+                            "user__avatar",
+                            "last_visible_message__sender__avatar",
+                        )
                     ),
                 )
             )
@@ -430,7 +464,6 @@ class ListMessageReactionAPIView(BaseListAPIView):
                 message__conversation__deleted_at=None,
                 message__conversation__conversation_member__user=user,
                 message_id=message_id,
-                deleted_at=None,
             )
             .exclude(
                 message__message_visibility__user=user,
@@ -438,4 +471,20 @@ class ListMessageReactionAPIView(BaseListAPIView):
                 message__message_visibility__deleted_at=None,
             )
             .select_related("user__avatar")
+        )
+
+
+class SetNicknameForMemberInConversationAPIView(BaseUpdateAPIView):
+    permission_classes = (IsUser,)
+    model = ConversationMember
+    serializer_class = SetNicknameForMemberInConversationSerializer
+    lookup_url_kwarg = "member_id"
+
+    def get_queryset(self):
+        conversation_id = self.kwargs.get("conversation_id")
+
+        return (
+            super()
+            .get_queryset()
+            .filter(conversation_id=conversation_id, conversation__deleted_at=None)
         )

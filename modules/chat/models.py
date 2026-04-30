@@ -247,3 +247,17 @@ class MessageReaction(BaseModel):
 
     class Meta:
         unique_together = ("message", "user", "reaction_type")
+
+
+class UserAlias(BaseModel):
+    # The conversation member for whom the alias is set
+    target_member = models.ForeignKey(
+        ConversationMember,
+        on_delete=models.CASCADE,
+        related_name="target_member_user_alias",
+    )
+
+    nickname = models.CharField(max_length=256, blank=True, null=True, default=None)
+
+    # The user who set the alias for the target member
+    user = models.ForeignKey("user.User", on_delete=models.CASCADE, related_name="user_alias")
