@@ -41,3 +41,6 @@ class EventDispatchService:
             status=EventDispatch.Status.ACKED,
             acked_at=timezone.now(),
         )
+
+    def get_event_dispatch_by_id(self, id: str | UUID) -> EventDispatch | None:
+        return EventDispatch.objects.filter(id=id, deleted_at=None).first()

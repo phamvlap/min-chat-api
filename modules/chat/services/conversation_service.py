@@ -2,7 +2,6 @@ from uuid import UUID
 
 import orjson
 from django.db.models import Count
-from django.utils import timezone
 
 from base.constants import ChatConstants
 from modules.chat.models import Conversation, ConversationMember, Message, MessageStatus
@@ -27,7 +26,6 @@ class ConversationService:
     def create_direct_conversation(self, user: User, destination_user: User) -> Conversation:
         conversation: Conversation = Conversation.objects.create(
             type=Conversation.Types.DIRECT,
-            created_at=timezone.now(),
             created_by=user.id,
         )
 

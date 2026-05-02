@@ -9,10 +9,11 @@ from modules.event_dispatch.models import EventDispatch
 
 @shared_task
 def send_event_task(event_dispatch_id: str):
+    from modules.event_dispatch.services import EventDispatchService
     from services.websocket_service import WebSocketService
 
     # Get the event dispatch record
-    event_dispatch = EventDispatch.objects.filter(id=event_dispatch_id, deleted_at=None).first()
+    event_dispatch = EventDispatchService().get_event_dispatch_by_id(event_dispatch_id)
 
     # If the record doesn't exist, has already been acknowledged, or has exhausted retries, do nothing
     if not event_dispatch:
@@ -55,8 +56,10 @@ def send_event_task(event_dispatch_id: str):
 
 @shared_task
 def check_acknowledgment_task(event_dispatch_id: str):
+    from modules.event_dispatch.services import EventDispatchService
+
     # Get the event dispatch record
-    event_dispatch = EventDispatch.objects.filter(id=event_dispatch_id, deleted_at=None).first()
+    event_dispatch = EventDispatchService().get_event_dispatch_by_id(event_dispatch_id)
 
     # If the record doesn't exist, do nothing
     if not event_dispatch:
@@ -68,8 +71,7 @@ def check_acknowledgment_task(event_dispatch_id: str):
 
     # If the acknowledgment deadline has not yet passed, do nothing (this can happen if the task was delayed for some reason)
     if event_dispatch.is_retry_exhausted():
-        event_dispatch.status = EventDispatch.Status.FAILED
-        event_dispatch.save(update_fields=["status"])
+        event_dispatch.mark_as_failed()
         return
 
     # If the acknowledgment deadline has passed and retries are still available, resend the event

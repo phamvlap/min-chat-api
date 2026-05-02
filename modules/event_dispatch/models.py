@@ -41,3 +41,7 @@ class EventDispatch(BaseModel):
 
     def is_retry_exhausted(self) -> bool:
         return self.retry_count >= self.max_retries
+
+    def mark_as_failed(self) -> None:
+        self.status = self.Status.FAILED
+        self.save(update_fields=["status"])
