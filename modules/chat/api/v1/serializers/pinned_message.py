@@ -5,8 +5,11 @@ from modules.chat.api.v1.serializers.message import NestedMessageSerializer
 from modules.chat.models import PinnedMessage
 from modules.chat.services import ConversationService, MessageService, PinnedMessageService
 from modules.event_dispatch.services import EventDispatchService
+from modules.user.api.v1.serializers.user import (
+    NestedPublicUserSerializer,
+    NestedRestrictedUserSerializer,
+)
 from modules.user.models import User
-from modules.user.serializers import NestedPublicUserSerializer, NestedRestrictedUserSerializer
 
 
 class ListPinnedMessageSerializer(serializers.ModelSerializer):

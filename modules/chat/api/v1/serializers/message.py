@@ -6,8 +6,8 @@ from rest_framework import serializers
 from base.constants import ChatConstants, ResponseStatus
 from modules.chat.models import Message
 from modules.chat.services.message_service import MessageService
+from modules.user.api.v1.serializers.user import NestedRestrictedUserSerializer
 from modules.user.models import User
-from modules.user.serializers import NestedRestrictedUserSerializer
 
 from .message_reaction import MessageReactionInMessageListSerializer
 

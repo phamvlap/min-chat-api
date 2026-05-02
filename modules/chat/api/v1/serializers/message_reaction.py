@@ -3,8 +3,8 @@ from rest_framework import serializers
 from base.constants import ResponseStatus
 from modules.chat.models import Message, MessageReaction
 from modules.chat.services import ConversationService, MessageReactionService, MessageService
+from modules.user.api.v1.serializers.user import NestedRestrictedUserSerializer
 from modules.user.models import User
-from modules.user.serializers import NestedRestrictedUserSerializer
 
 
 class MessageReactionInMessageListSerializer(serializers.ModelSerializer):

@@ -4,8 +4,8 @@ from modules.chat.api.v1.serializers.member import NestedConversationMemberSeria
 from modules.chat.models import Conversation
 from modules.chat.services import ConversationService
 from modules.media.serializers import NestedMediaInRetrieveSerializer
+from modules.user.api.v1.serializers.user import NestedRestrictedUserSerializer
 from modules.user.models import User
-from modules.user.serializers import NestedRestrictedUserSerializer
 
 from .message import NestedMessageSerializer
 

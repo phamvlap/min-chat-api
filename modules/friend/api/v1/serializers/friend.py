@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from modules.friend.models import Friend
-from modules.user.serializers import NestedRestrictedUserSerializer
+from modules.user.api.v1.serializers.user import NestedRestrictedUserSerializer
 
 
 class ListFriendSerializer(serializers.ModelSerializer):

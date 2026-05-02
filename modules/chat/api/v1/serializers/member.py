@@ -4,8 +4,8 @@ from base.constants import ResponseStatus
 from modules.chat.api.v1.serializers.message import NestedMessageSerializer
 from modules.chat.models import ConversationMember
 from modules.chat.services import UserAliasService
+from modules.user.api.v1.serializers.user import NestedRestrictedUserSerializer
 from modules.user.models import User
-from modules.user.serializers import NestedRestrictedUserSerializer
 
 
 class NestedConversationMemberSerializer(serializers.ModelSerializer):

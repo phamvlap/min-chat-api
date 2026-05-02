@@ -4,8 +4,8 @@ from base.constants import FriendRequestAction, ResponseStatus
 from modules.friend.services import FriendService
 from modules.friend_request.models import FriendRequest
 from modules.friend_request.services import FriendRequestService
+from modules.user.api.v1.serializers.user import NestedPublicUserSerializer
 from modules.user.models import User
-from modules.user.serializers import NestedPublicUserSerializer
 
 
 class CreateFriendRequestSerializer(serializers.ModelSerializer):
