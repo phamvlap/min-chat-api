@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import cast
 
 from django.utils import timezone
 from rest_framework import serializers
@@ -97,7 +98,9 @@ class EditMessageSerializer(serializers.ModelSerializer):
         fields = ("message", "message_type")
 
     def validate(self, attrs):
-        if timezone.now() - self.instance.created_at > timedelta(
+        message: Message = cast(Message, self.instance)  # Type hint for better code readability
+
+        if timezone.now() - message.created_at > timedelta(
             seconds=ChatConstants.Message.MessageEdition.EDITABLE_DURATION
         ):
             raise serializers.ValidationError(
@@ -112,7 +115,6 @@ class EditMessageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Authentication credentials were not provided.")
 
         # Ensure that the message is not deleted for everyone
-        message: Message = self.instance
         if message.is_deleted_for_everyone:
             raise serializers.ValidationError(
                 "You cannot edit a message that has been deleted for everyone."

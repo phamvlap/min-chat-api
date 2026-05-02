@@ -85,10 +85,11 @@ class UserPresenceConsumer(BaseWebsocketConsumer):
 
     def disconnect(self, close_code):
         # Leave the user group
-        async_to_sync(self.channel_layer.group_discard)(
-            WebSocket.Group.USER.format(user_id=self.user.id),
-            self.channel_name,
-        )
+        if self.user:
+            async_to_sync(self.channel_layer.group_discard)(
+                WebSocket.Group.USER.format(user_id=self.user.id),
+                self.channel_name,
+            )
 
         # Unsubscribe from all presence groups
         for related_user_id in self.subcribed_presence_groups:
@@ -97,14 +98,15 @@ class UserPresenceConsumer(BaseWebsocketConsumer):
                 self.channel_name,
             )
 
-        # Set the user as offline in the presence service
-        just_went_offline = self.presence_service.remove_user_presence(
-            self.user.id,
-            self.connection_id,
-        )
-        # If the user just went offline, broadcast their offline status to related users
-        if just_went_offline:
-            self.presence_service.broadcast_offline_status(self.user.id)
+        if self.user:
+            # Set the user as offline in the presence service
+            just_went_offline = self.presence_service.remove_user_presence(
+                self.user.id,
+                self.connection_id,
+            )
+            # If the user just went offline, broadcast their offline status to related users
+            if just_went_offline:
+                self.presence_service.broadcast_offline_status(self.user.id)
 
     def user_online(self, event):
         self.dispatch_server_event(event)
@@ -123,4 +125,5 @@ class UserPresenceConsumer(BaseWebsocketConsumer):
 
     def pong(self, event):
         # Just update the user's presence without sending any message back to the client
-        self.presence_service.heartbeat(self.user.id)
+        if self.user:
+            self.presence_service.heartbeat(self.user.id)
