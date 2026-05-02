@@ -24,6 +24,7 @@ class NestedMessageSerializer(serializers.ModelSerializer):
             "message_type",
             "created_at",
             "is_deleted_for_everyone",
+            "is_edited",
         )
         read_only_fields = fields
 
