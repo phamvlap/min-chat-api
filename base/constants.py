@@ -264,3 +264,6 @@ class ChatConstants:
         class ReactionStatus(StrEnum):
             ADDED = "added"
             REMOVED = "removed"
+
+        class MessageEdition:
+            EDITABLE_DURATION = 30 * TimeConstants.ONE_MINUTE  # 30 minutes

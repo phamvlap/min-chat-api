@@ -3,6 +3,7 @@ from django.urls import include, path
 from modules.chat.api.v1.views.user import (
     CreateDirectConversationAPIView,
     DeleteMessageAPIView,
+    EditMessageAPIView,
     ListConversationAPIView,
     ListMessageAPIView,
     ListMessageReactionAPIView,
@@ -68,6 +69,11 @@ urlpatterns = [
                     "<uuid:conversation_id>/messages/<uuid:message_id>/reactions/",
                     ListMessageReactionAPIView.as_view(),
                     name="list-message-reactions",
+                ),
+                path(
+                    "<uuid:conversation_id>/messages/<uuid:message_id>/edit/",
+                    EditMessageAPIView.as_view(),
+                    name="edit-message",
                 ),
                 path(
                     "<uuid:conversation_id>/members/<uuid:member_id>/nickname/",

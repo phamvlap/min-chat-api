@@ -35,7 +35,11 @@ from modules.chat.api.v1.serializers.conversation import (
     RetrieveConversationSerializer,
 )
 from modules.chat.api.v1.serializers.member import SetNicknameForMemberInConversationSerializer
-from modules.chat.api.v1.serializers.message import ListMessageSerializer, ReadMessageSerializer
+from modules.chat.api.v1.serializers.message import (
+    EditMessageSerializer,
+    ListMessageSerializer,
+    ReadMessageSerializer,
+)
 from modules.chat.api.v1.serializers.message_reaction import (
     ListMessageReactionSerializer,
     ReactMessageSerializer,
@@ -487,4 +491,32 @@ class SetNicknameForMemberInConversationAPIView(BaseUpdateAPIView):
             super()
             .get_queryset()
             .filter(conversation_id=conversation_id, conversation__deleted_at=None)
+        )
+
+
+class EditMessageAPIView(BaseUpdateAPIView):
+    permission_classes = (IsUser,)
+    model = Message
+    serializer_class = EditMessageSerializer
+    lookup_url_kwarg = "message_id"
+
+    def get_queryset(self):
+        user: User = cast(User, self.request.user)
+        conversation_id = self.kwargs.get("conversation_id")
+
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                conversation__id=conversation_id,
+                conversation__deleted_at=None,
+                conversation__conversation_member__user=user,
+                conversation__conversation_member__deleted_at=None,
+                sender=user,
+            )
+            .exclude(
+                message_visibility__user=user,
+                message_visibility__is_hidden=True,
+                message_visibility__deleted_at=None,
+            )
         )

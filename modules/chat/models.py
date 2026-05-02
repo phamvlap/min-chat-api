@@ -115,9 +115,12 @@ class Message(BaseModel):
         null=True,
     )
 
-    # The content and type of the message
+    # The current content and type of the message
     message = models.TextField(blank=True, null=True, default=None)
     message_type = models.CharField(max_length=10, choices=Types.choices, default=Types.TEXT)
+
+    # Version field to track edits to the message
+    version = models.PositiveIntegerField(default=0)
 
     # Reference to another message if this is a reply
     replied_to = models.ForeignKey(
@@ -136,6 +139,18 @@ class Message(BaseModel):
         "user.User",
         on_delete=models.SET_NULL,
         related_name="deleted_for_everyone_by_message",
+        null=True,
+        blank=True,
+        default=None,
+    )
+
+    # Flag to indicate if the message has been edited
+    is_edited = models.BooleanField(default=False)
+    edited_at = models.DateTimeField(null=True, blank=True, default=None)
+    edited_by = models.ForeignKey(
+        "user.User",
+        on_delete=models.SET_NULL,
+        related_name="edited_by_message",
         null=True,
         blank=True,
         default=None,
@@ -261,3 +276,31 @@ class UserAlias(BaseModel):
 
     # The user who set the alias for the target member
     user = models.ForeignKey("user.User", on_delete=models.CASCADE, related_name="user_alias")
+
+
+class MessageRevision(BaseModel):
+    # The message for which the revision is being tracked
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="message_revision",
+    )
+
+    # The content of the message at the time of the revision
+    message_content = models.TextField(blank=True, null=True, default=None)
+    message_type = models.CharField(
+        max_length=10,
+        choices=Message.Types.choices,
+        default=Message.Types.TEXT,
+    )
+
+    # The content of the message before the revision (for edit history)
+    old_message_content = models.TextField(blank=True, null=True, default=None)
+    old_message_type = models.CharField(
+        max_length=10,
+        choices=Message.Types.choices,
+        default=Message.Types.TEXT,
+    )
+
+    # The version number of the revision
+    version = models.PositiveIntegerField(default=0)

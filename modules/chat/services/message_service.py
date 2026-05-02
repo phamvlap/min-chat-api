@@ -1,10 +1,18 @@
 from typing import Any
 from uuid import UUID
 
+from django.db import transaction
 from django.db.models import QuerySet
+from django.utils import timezone
 
 from base.constants import WebSocket
-from modules.chat.models import Conversation, ConversationMember, Message, MessageStatus
+from modules.chat.models import (
+    Conversation,
+    ConversationMember,
+    Message,
+    MessageRevision,
+    MessageStatus,
+)
 from modules.event_dispatch.services import EventDispatchService
 from modules.user.models import User
 
@@ -177,3 +185,49 @@ class MessageService:
         ).update(last_read_at=read_before)
 
         return read_count
+
+    def edit_message(
+        self,
+        *,
+        message: Message,
+        user: User,
+        new_message_content: str,
+        new_message_type: Message.Types,
+    ) -> Message:
+        with transaction.atomic():
+            message = Message.objects.select_for_update().get(id=message.id, deleted_at=None)
+
+            # Create a message revision before updating the message
+            MessageRevision.objects.create(
+                message=message,
+                message_content=new_message_content,
+                message_type=new_message_type,
+                old_message_content=message.message,
+                old_message_type=message.message_type,
+                version=message.version + 1,
+                created_by=user.id,
+            )
+
+            # Update the message content and message type
+            message.message = new_message_content
+            message.message_type = new_message_type
+            message.version += 1
+            message.modified_by = user.id
+            message.is_edited = True
+            message.edited_at = timezone.now()
+            message.edited_by = user
+
+            message.save(
+                update_fields=[
+                    "message",
+                    "message_type",
+                    "version",
+                    "modified_by",
+                    "modified_at",
+                    "is_edited",
+                    "edited_at",
+                    "edited_by",
+                ]
+            )
+
+        return message
