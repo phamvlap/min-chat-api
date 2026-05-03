@@ -288,7 +288,7 @@ class BaseUpdateAPIView(UpdateAPIView):
         return self.model._default_manager.filter(deleted_at=None)
 
     def perform_update(self, serializer):
-        serializer.save(modified_at=timezone.now(), modified_by=self.request.user.id)
+        serializer.save(modified_by=self.request.user.id)
 
 
 class BaseDestroyAPIView(DestroyAPIView):

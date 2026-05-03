@@ -196,7 +196,6 @@ class MessageService:
                     "message_type",
                     "version",
                     "modified_by",
-                    "modified_at",
                     "is_edited",
                     "edited_at",
                     "edited_by",

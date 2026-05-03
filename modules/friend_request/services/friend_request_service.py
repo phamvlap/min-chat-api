@@ -32,9 +32,8 @@ class FriendRequestService:
         # Update the status of the friend request based on the action
         friend_request.status = action_to_status_map.get(action.value, friend_request.status)
         friend_request.responded_at = timezone.now()
-        friend_request.modified_at = timezone.now()
         friend_request.modified_by = user.id
-        friend_request.save(update_fields=["status", "responded_at", "modified_at", "modified_by"])
+        friend_request.save(update_fields=["status", "responded_at", "modified_by"])
 
         # If the friend request was accepted, create a friendship in both directions
         if friend_request.status == FriendRequest.Status.ACCEPTED:
@@ -50,6 +49,5 @@ class FriendRequestService:
 
     def cancel_friend_request(self, user: User, friend_request: FriendRequest) -> None:
         friend_request.status = FriendRequest.Status.CANCELED
-        friend_request.modified_at = timezone.now()
         friend_request.modified_by = user.id
-        friend_request.save(update_fields=["status", "modified_at", "modified_by"])
+        friend_request.save(update_fields=["status", "modified_by"])
