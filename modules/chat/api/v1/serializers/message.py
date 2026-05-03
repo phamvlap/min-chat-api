@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from base.constants import ChatConstants, ResponseStatus
-from modules.chat.models import Message
+from modules.chat.models import Message, MessageStatus
 from modules.chat.services.message_service import MessageService
 from modules.user.api.v1.serializers.user import NestedRestrictedUserSerializer
 from modules.user.models import User
@@ -148,3 +148,38 @@ class EditMessageSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         return instance
+
+
+# Serializers for WebSocket events
+class SendMessageEventPayloadSerializer(serializers.ModelSerializer):
+    conversation_id = serializers.UUIDField(write_only=True, source="conversation.id")
+    sender = NestedRestrictedUserSerializer(read_only=True)
+    message_id = serializers.UUIDField(read_only=True, source="id")
+    replied_to = "self"  # Recursive relationship for nested replies
+
+    class Meta:
+        model = Message
+        fields = (
+            "conversation_id",
+            "sender",
+            "message_id",
+            "message",
+            "message_type",
+            "created_at",
+            "replied_to",
+            "status",
+            "is_pinned",
+            "is_deleted_for_everyone",
+            "is_edited",
+        )
+        read_only_fields = fields
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        # Intial state for a new message
+        representation["status"] = MessageStatus.StatusChoices.SENT
+        representation["is_pinned"] = False
+        representation["reactions"] = []
+
+        return representation

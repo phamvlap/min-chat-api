@@ -1,4 +1,3 @@
-from typing import Any
 from uuid import UUID
 
 from django.db import transaction
@@ -44,6 +43,8 @@ class MessageService:
         message_text: str,
         message_type: str,
     ) -> None:
+        from modules.chat.api.v1.serializers.message import SendMessageEventPayloadSerializer
+
         # Prepare message data
         message_data: dict = {
             "conversation": conversation,
@@ -86,35 +87,7 @@ class MessageService:
         ).update(last_visible_message=message)
 
         # Build the message data to be sent to clients
-        sender_avatar: dict[str, Any] | None = None
-
-        if user.avatar:
-            sender_avatar = {
-                "id": user.avatar.id,
-                "key": user.avatar.key,
-                "key_type": user.avatar.key_type,
-                "original_name": user.avatar.original_name,
-                "file_size": user.avatar.file_size,
-                "public": user.avatar.public,
-                "public_url": user.avatar.public_url,
-            }
-
-        message_payload: dict[str, Any] = {
-            "conversation_id": conversation.id,
-            "sender": {
-                "id": user.id,
-                "username": user.username,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "email": user.email,
-                "is_user": user.is_user,
-                "avatar": sender_avatar,
-            },
-            "message_id": message.id,
-            "message": message.message,
-            "message_type": message.message_type,
-            "created_at": message.created_at,
-        }
+        message_payload = SendMessageEventPayloadSerializer(message).data
 
         EventDispatchService().dispatch_event(
             entity=message,

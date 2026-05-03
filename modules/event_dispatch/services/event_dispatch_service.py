@@ -1,7 +1,9 @@
+from typing import Any
 from uuid import UUID
 
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
+from rest_framework.utils.serializer_helpers import ReturnDict
 
 from base.constants import WebSocket
 from modules.event_dispatch.models import EventDispatch
@@ -13,7 +15,13 @@ class EventDispatchService:
     def __init__(self):
         pass
 
-    def dispatch_event(self, entity, event_type: str, payload: dict, group_name: str) -> None:
+    def dispatch_event(
+        self,
+        entity,
+        event_type: str,
+        payload: dict[str, Any] | ReturnDict,
+        group_name: str,
+    ) -> None:
         entity_content_type = ContentType.objects.get_for_model(entity)
         payload = {
             "type": event_type,
