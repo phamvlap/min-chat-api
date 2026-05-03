@@ -1,6 +1,12 @@
 from rest_framework import serializers
 
 from base.constants import FriendRequestAction, ResponseStatus
+from base.exceptions import (
+    AuthenticationCredentialsNotProvidedException,
+    FriendAlreadyExistsException,
+    FriendRequestAlreadyExistsException,
+    FriendRequestSentToSelfException,
+)
 from modules.friend.services import FriendService
 from modules.friend_request.models import FriendRequest
 from modules.friend_request.services import FriendRequestService
@@ -23,19 +29,17 @@ class CreateFriendRequestSerializer(serializers.ModelSerializer):
         friend: User = attrs.pop("friend_id")
 
         if not user:
-            raise serializers.ValidationError("Authentication credentials were not provided.")
+            raise AuthenticationCredentialsNotProvidedException()
 
         if user.id == friend.id:
-            raise serializers.ValidationError("You cannot send a friend request to yourself.")
+            raise FriendRequestSentToSelfException()
 
         if FriendService().are_users_friends(user, friend):
-            raise serializers.ValidationError("You are already friends with this user.")
+            raise FriendAlreadyExistsException()
 
         existing_request = FriendRequestService().get_friend_request(sender=user, receiver=friend)
         if existing_request:
-            raise serializers.ValidationError(
-                "A friend request already exists between you and this user."
-            )
+            raise FriendRequestAlreadyExistsException()
 
         attrs["sender"] = user
         attrs["receiver"] = friend

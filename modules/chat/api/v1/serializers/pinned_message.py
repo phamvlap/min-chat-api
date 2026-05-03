@@ -1,6 +1,13 @@
 from rest_framework import serializers
 
 from base.constants import ResponseStatus, WebSocket
+from base.exceptions import (
+    ConversationIDRequiredInURLException,
+    ConversationNotFoundException,
+    MessageAlreadyPinnedException,
+    MessageNotFoundException,
+    PinnedMessageNotFoundException,
+)
 from modules.chat.api.v1.serializers.message import NestedMessageSerializer
 from modules.chat.models import PinnedMessage
 from modules.chat.services import ConversationService, MessageService, PinnedMessageService
@@ -59,23 +66,23 @@ class PinMessageSerializer(serializers.ModelSerializer):
         user: User | None = view.request.user if view and view.request else None
 
         if not conversation_id:
-            raise serializers.ValidationError("Conversation ID is required in the URL.")
+            raise ConversationIDRequiredInURLException()
 
         # Validate that the conversation exists and is not deleted
         conversation = ConversationService().get_conversation_by_id(conversation_id)
         if not conversation:
-            raise serializers.ValidationError("Conversation not found.")
+            raise ConversationNotFoundException()
 
         # Validate that the message exists in the conversation and is not deleted
         message_id = attrs.pop("message_id")
         message = MessageService().get_message_in_conversation(message_id, conversation_id)
 
         if not message:
-            raise serializers.ValidationError("Message not found in the specified conversation.")
+            raise MessageNotFoundException()
 
         # Validate the message is pinned in the conversation
         if PinnedMessageService().get_pinned_message_in_conversation(message_id, conversation_id):
-            raise serializers.ValidationError("Message is already pinned in this conversation.")
+            raise MessageAlreadyPinnedException()
 
         attrs["conversation"] = conversation
         attrs["message"] = message
@@ -126,19 +133,19 @@ class UnpinMessageSerializer(serializers.ModelSerializer):
         conversation_id = view.kwargs.get("conversation_id") if view else None
 
         if not conversation_id:
-            raise serializers.ValidationError("Conversation ID is required in the URL.")
+            raise ConversationIDRequiredInURLException()
 
         # Validate that the conversation exists and is not deleted
         conversation = ConversationService().get_conversation_by_id(conversation_id)
         if not conversation:
-            raise serializers.ValidationError("Conversation not found.")
+            raise ConversationNotFoundException()
 
         # Validate that the message exists in the conversation and is not deleted
         message_id = attrs.pop("message_id")
         message = MessageService().get_message_in_conversation(message_id, conversation_id)
 
         if not message:
-            raise serializers.ValidationError("Message not found in the specified conversation.")
+            raise MessageNotFoundException()
 
         pinned_message = PinnedMessageService().get_pinned_message_in_conversation(
             message_id,
@@ -147,7 +154,7 @@ class UnpinMessageSerializer(serializers.ModelSerializer):
         )
         # Validate the message is pinned in the conversation
         if not pinned_message:
-            raise serializers.ValidationError("Message is not pinned in this conversation.")
+            raise PinnedMessageNotFoundException()
 
         attrs["pinned_message"] = pinned_message
 

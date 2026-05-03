@@ -1,5 +1,9 @@
 from rest_framework import serializers
 
+from base.exceptions import (
+    AuthenticationCredentialsNotProvidedException,
+    DirectConversationCreatedWithSelfException,
+)
 from modules.chat.api.v1.serializers.member import NestedConversationMemberSerializer
 from modules.chat.models import Conversation
 from modules.chat.services import ConversationService
@@ -27,13 +31,11 @@ class CreateDirectConversationSerializer(serializers.ModelSerializer):
         destination_user: User = attrs.pop("destination_user_id")
 
         if not user:
-            raise serializers.ValidationError("Authentication credentials were not provided.")
+            raise AuthenticationCredentialsNotProvidedException()
 
         # Prevent users from creating a conversation with themselves
         if user.id == destination_user.id:
-            raise serializers.ValidationError(
-                "You cannot create a direct conversation with yourself."
-            )
+            raise DirectConversationCreatedWithSelfException()
 
         # Check for an existing direct conversation between the two users
         existing_conversation: Conversation | None = ConversationService().get_direct_conversation(

@@ -1,6 +1,5 @@
-from rest_framework.exceptions import NotFound
-
 from base.constants import ViewAction
+from base.exceptions import UserNotFoundException
 from base.permission import IsAuthenticated
 from base.views import BaseCreateAPIView, BaseRetrieveAPIView, BaseUpdateAPIView
 from modules.user.models import User
@@ -31,5 +30,5 @@ class RetrieveUpdateUserAPIView(BaseRetrieveAPIView, BaseUpdateAPIView):
         )
 
         if not user:
-            raise NotFound("User not found.")
+            raise UserNotFoundException()
         return user

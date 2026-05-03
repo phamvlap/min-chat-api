@@ -1,6 +1,12 @@
 from rest_framework import serializers
 
 from base.constants import ResponseStatus
+from base.exceptions import (
+    AuthenticationCredentialsNotProvidedException,
+    ConversationIDRequiredInURLException,
+    ConversationNotFoundException,
+    MessageNotFoundException,
+)
 from modules.chat.models import Message, MessageReaction
 from modules.chat.services import ConversationService, MessageReactionService, MessageService
 from modules.user.api.v1.serializers.user import NestedRestrictedUserSerializer
@@ -30,19 +36,19 @@ class ReactMessageSerializer(serializers.ModelSerializer):
         conversation_id = view.kwargs.get("conversation_id") if view else None
 
         if not conversation_id:
-            raise serializers.ValidationError("Conversation ID is required in the URL.")
+            raise ConversationIDRequiredInURLException()
 
         # Validate that the conversation exists and is not deleted
         conversation = ConversationService().get_conversation_by_id(conversation_id)
         if not conversation:
-            raise serializers.ValidationError("Conversation not found.")
+            raise ConversationNotFoundException()
 
         # Validate that the message exists in the conversation and is not deleted
         message_id = attrs.pop("message_id")
         message = MessageService().get_message_in_conversation(message_id, conversation_id)
 
         if not message:
-            raise serializers.ValidationError("Message not found in the specified conversation.")
+            raise MessageNotFoundException()
 
         attrs["message"] = message
 
@@ -55,7 +61,7 @@ class ReactMessageSerializer(serializers.ModelSerializer):
         user: User | None = view.request.user if view and view.request else None
 
         if not user:
-            raise serializers.ValidationError("Authentication credentials were not provided.")
+            raise AuthenticationCredentialsNotProvidedException()
 
         reaction_status = MessageReactionService().toggle_reaction(user, message, reaction_type)
 

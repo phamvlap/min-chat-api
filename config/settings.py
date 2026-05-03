@@ -142,6 +142,7 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.FormParser",
     ),
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
+    "EXCEPTION_HANDLER": "base.exception_handlers.custom_exception_handler",
 }
 
 

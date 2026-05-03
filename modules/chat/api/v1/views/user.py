@@ -15,10 +15,16 @@ from django.db.models import (
     When,
 )
 from django.db.models.functions import Coalesce
-from rest_framework import serializers, status
+from rest_framework import status
 from rest_framework.response import Response
 
 from base.constants import ViewAction
+from base.exceptions import (
+    ConversationNotFoundException,
+    MessageDeletedForEveryoneOnlyBySenderException,
+    MessageFromSystemCannotBeDeletedException,
+    MessageNotFoundException,
+)
 from base.permission import IsUser
 from base.views import (
     BaseCreateAPIView,
@@ -399,7 +405,7 @@ class DeleteMessageAPIView(BaseDestroyAPIView):
         # Validate that the conversation exists and is not deleted
         conversation = ConversationService().get_conversation_by_id(conversation_id)
         if not conversation:
-            raise serializers.ValidationError("Conversation not found.")
+            raise ConversationNotFoundException()
 
         # Validate request data
         serializer = self.get_serializer(data=request.data)
@@ -417,10 +423,10 @@ class DeleteMessageAPIView(BaseDestroyAPIView):
         )
 
         if not message:
-            raise serializers.ValidationError("Message not found in the specified conversation.")
+            raise MessageNotFoundException()
 
         if not message.sender or message.message_type == Message.Types.SYSTEM:
-            raise serializers.ValidationError("System messages cannot be deleted.")
+            raise MessageFromSystemCannotBeDeletedException()
 
         is_deleted_for_everyone = validated_data["is_deleted_for_everyone"]
 
@@ -428,9 +434,7 @@ class DeleteMessageAPIView(BaseDestroyAPIView):
             user,
             message,
         ):
-            raise serializers.ValidationError(
-                "You can only delete messages for everyone that you have sent."
-            )
+            raise MessageDeletedForEveryoneOnlyBySenderException()
 
         MessageVisibilityService().delete_message_for_user(
             user,

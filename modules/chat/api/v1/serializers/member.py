@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from base.constants import ResponseStatus
+from base.exceptions import AuthenticationCredentialsNotProvidedException
 from modules.chat.api.v1.serializers.message import NestedMessageSerializer
 from modules.chat.models import ConversationMember
 from modules.chat.services import UserAliasService
@@ -45,7 +46,7 @@ class SetNicknameForMemberInConversationSerializer(serializers.ModelSerializer):
             user: User | None = view.request.user if view and view.request else None
 
             if not user:
-                raise serializers.ValidationError("Authentication credentials were not provided.")
+                raise AuthenticationCredentialsNotProvidedException()
 
             nickname = validated_data["nickname"]
 

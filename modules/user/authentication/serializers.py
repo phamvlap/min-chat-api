@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from base.exceptions import MediaDoesNotExistException
 from modules.media.models import Media
 from modules.media.serializers import (
     NestedMediaInCreateAndUpdateSerializer,
@@ -51,7 +52,7 @@ class UpdateUserSerializer(serializers.ModelSerializer):
                     is_active=True,
                 ).first()
                 if not media:
-                    raise serializers.ValidationError(f"Media with id {avatar_id} does not exist.")
+                    raise MediaDoesNotExistException()
                 attrs["avatar"] = media
             else:
                 attrs["avatar"] = None

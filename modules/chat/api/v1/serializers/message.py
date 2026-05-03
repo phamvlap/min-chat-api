@@ -5,6 +5,11 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from base.constants import ChatConstants, ResponseStatus
+from base.exceptions import (
+    AuthenticationCredentialsNotProvidedException,
+    MessageDeletedForEveryoneException,
+    MessageEditedOutsideAllowedWindowTimeException,
+)
 from modules.chat.models import Message, MessageStatus
 from modules.chat.services.message_service import MessageService
 from modules.user.api.v1.serializers.user import NestedRestrictedUserSerializer
@@ -121,7 +126,7 @@ class EditMessageSerializer(serializers.ModelSerializer):
         if timezone.now() - message.created_at > timedelta(
             seconds=ChatConstants.Message.MessageEdition.EDITABLE_DURATION
         ):
-            raise serializers.ValidationError(
+            raise MessageEditedOutsideAllowedWindowTimeException(
                 f"You can only edit messages within {ChatConstants.Message.MessageEdition.EDITABLE_DURATION} seconds of sending."
             )
 
@@ -130,13 +135,11 @@ class EditMessageSerializer(serializers.ModelSerializer):
         user: User | None = view.request.user if view and view.request else None
 
         if not user:
-            raise serializers.ValidationError("Authentication credentials were not provided.")
+            raise AuthenticationCredentialsNotProvidedException()
 
         # Ensure that the message is not deleted for everyone
         if message.is_deleted_for_everyone:
-            raise serializers.ValidationError(
-                "You cannot edit a message that has been deleted for everyone."
-            )
+            raise MessageDeletedForEveryoneException()
 
         attrs["user"] = user
 
