@@ -230,4 +230,21 @@ class MessageService:
                 ]
             )
 
+            # Send message update notification to conversation members
+            payload: dict = {
+                "message_id": message.id,
+                "new_message": message.message,
+                "new_message_type": message.message_type,
+                "edited_at": message.edited_at,
+            }
+
+            EventDispatchService().dispatch_event(
+                entity=message,
+                event_type=WebSocket.ServerEvent.Message.MESSAGE_UPDATE,
+                payload=payload,
+                group_name=WebSocket.Group.CONVERSATION.format(
+                    conversation_id=str(message.conversation.id)
+                ),
+            )
+
         return message

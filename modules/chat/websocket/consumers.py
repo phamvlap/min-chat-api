@@ -164,6 +164,9 @@ class ChatConsumer(BaseWebsocketConsumer):
     def chat_message_deleted_for_everyone(self, event: dict):
         self.dispatch_server_event(event)
 
+    def chat_message_update(self, event: dict):
+        self.dispatch_server_event(event)
+
     def chat_reaction_updated(self, event: dict):
         self.dispatch_server_event(event)
 
@@ -189,4 +192,8 @@ class ChatConsumer(BaseWebsocketConsumer):
 
     def notify_reaction_updated(self, event: dict):
         # Send reaction updated notification to clients
+        self.send_message(event)
+
+    def notify_message_updated(self, event: dict):
+        # Send message updated notification to clients
         self.send_message(event)

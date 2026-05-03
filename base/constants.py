@@ -36,6 +36,7 @@ class WebSocket:
             MESSAGE_PINNED = "chat_message_pinned"
             MESSAGE_UNPINNED = "chat_message_unpinned"
             MESSAGE_DELETED_FOR_EVERYONE = "chat_message_deleted_for_everyone"
+            MESSAGE_UPDATE = "chat_message_update"
             REACTION_UPDATED = "chat_reaction_updated"
 
         class Presence(StrEnum):
