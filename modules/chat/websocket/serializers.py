@@ -13,3 +13,4 @@ class SendMessageSerializer(serializers.Serializer):
         choices=Message.Types.choices,
         default=Message.Types.TEXT,
     )
+    replied_to_message_id = serializers.UUIDField(required=False, allow_null=True)

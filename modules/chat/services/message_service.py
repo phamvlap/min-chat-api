@@ -38,12 +38,18 @@ class MessageService:
 
     def send_message(
         self,
+        *,
         user: User,
         conversation: Conversation,
         message_text: str,
         message_type: str,
+        replied_to: Message | None = None,
     ) -> None:
-        from modules.chat.api.v1.serializers.message import SendMessageEventPayloadSerializer
+        from modules.chat.api.v1.serializers.message import (
+            RepliedMessageSnapshotSerializer,
+            SendMessageEventPayloadSerializer,
+        )
+        from utils.normalizer_utils import to_serializable_dict
 
         # Prepare message data
         message_data: dict = {
@@ -52,6 +58,12 @@ class MessageService:
             "message": message_text,
             "message_type": message_type,
         }
+
+        if replied_to:
+            message_data["replied_to"] = replied_to
+            message_data["replied_message_snapshot"] = to_serializable_dict(
+                RepliedMessageSnapshotSerializer(replied_to).data
+            )
 
         # Create a new message
         message: Message = Message.objects.create(**message_data)
@@ -220,3 +232,27 @@ class MessageService:
             )
 
         return message
+
+    def get_replied_message(
+        self,
+        *,
+        message_id: str | UUID,
+        conversation_id: str | UUID,
+        user_id: str | UUID,
+    ) -> Message | None:
+        return (
+            Message.objects.filter(
+                id=message_id,
+                conversation__id=conversation_id,
+                conversation__deleted_at=None,
+                conversation__conversation_member__user_id=user_id,
+                conversation__conversation_member__deleted_at=None,
+                deleted_at=None,
+            )
+            .exclude(
+                message_visibility__user_id=user_id,
+                message_visibility__is_hidden=True,
+                message_visibility__deleted_at=None,
+            )
+            .first()
+        )

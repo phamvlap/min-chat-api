@@ -87,6 +87,7 @@ class ChatConsumer(BaseWebsocketConsumer):
         self.dispatch_client_event(event_type, data)
 
     def handle_send_message(self, data: dict):
+        from modules.chat.models import Message
         from modules.chat.services import MessageService
 
         from .serializers import SendMessageSerializer
@@ -109,11 +110,31 @@ class ChatConsumer(BaseWebsocketConsumer):
             self.send_error(code=err_code, message=err_msg)
             return
 
-        MessageService().send_message(
+        validated_data = serializer.validated_data
+
+        message_service = MessageService()
+        replied_message: Message | None = None
+
+        if validated_data.get("replied_to_message_id"):
+            replied_message = message_service.get_replied_message(
+                message_id=validated_data["replied_to_message_id"],
+                conversation_id=self.conversation.id,
+                user_id=self.user.id,
+            )
+
+            if not replied_message:
+                self.send_error(
+                    code="replied_message_not_found",
+                    message="The message you are replying to was not found.",
+                )
+                return
+
+        message_service.send_message(
             user=self.user,
             conversation=self.conversation,
-            message_text=serializer.validated_data["message"],
-            message_type=serializer.validated_data["message_type"],
+            message_text=validated_data["message"],
+            message_type=validated_data["message_type"],
+            replied_to=replied_message,
         )
 
     def handle_message_delivered(self, data: dict):

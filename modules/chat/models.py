@@ -131,6 +131,7 @@ class Message(BaseModel):
         blank=True,
         default=None,
     )
+    replied_message_snapshot = models.JSONField(null=True, blank=True, default=None)
 
     # Flag to indicate if the message has been deleted for everyone
     is_deleted_for_everyone = models.BooleanField(default=False)

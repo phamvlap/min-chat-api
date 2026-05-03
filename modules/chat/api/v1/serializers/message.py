@@ -13,6 +13,23 @@ from modules.user.models import User
 from .message_reaction import MessageReactionInMessageListSerializer
 
 
+class NestedRepliedMessageSerializer(serializers.ModelSerializer):
+    sender = NestedRestrictedUserSerializer(read_only=True)
+
+    class Meta:
+        model = Message
+        fields = (
+            "id",
+            "sender",
+            "message",
+            "message_type",
+            "created_at",
+            "is_deleted_for_everyone",
+            "is_edited",
+        )
+        read_only_fields = fields
+
+
 class NestedMessageSerializer(serializers.ModelSerializer):
     sender = NestedRestrictedUserSerializer(read_only=True)
 
@@ -42,7 +59,7 @@ class NestedMessageSerializer(serializers.ModelSerializer):
 
 class ListMessageSerializer(serializers.ModelSerializer):
     sender = NestedRestrictedUserSerializer(read_only=True)
-    replied_to = "self"  # Recursive relationship for nested replies
+    replied_to = NestedRepliedMessageSerializer(read_only=True)
     status = serializers.CharField(read_only=True)
     is_pinned = serializers.BooleanField(read_only=True)
 
@@ -55,6 +72,7 @@ class ListMessageSerializer(serializers.ModelSerializer):
             "message_type",
             "created_at",
             "replied_to",
+            "replied_message_snapshot",
             "status",
             "is_pinned",
             "is_deleted_for_everyone",
@@ -150,12 +168,32 @@ class EditMessageSerializer(serializers.ModelSerializer):
         return instance
 
 
+class RepliedMessageSnapshotSerializer(serializers.ModelSerializer):
+    sender = NestedRestrictedUserSerializer(read_only=True)
+
+    class Meta:
+        model = Message
+        fields = (
+            "id",
+            "sender",
+            "message",
+            "message_type",
+            "version",
+            "created_at",
+            "is_deleted_for_everyone",
+            "deleted_for_everyone_at",
+            "is_edited",
+            "edited_at",
+        )
+        read_only_fields = fields
+
+
 # Serializers for WebSocket events
 class SendMessageEventPayloadSerializer(serializers.ModelSerializer):
     conversation_id = serializers.UUIDField(write_only=True, source="conversation.id")
     sender = NestedRestrictedUserSerializer(read_only=True)
     message_id = serializers.UUIDField(read_only=True, source="id")
-    replied_to = "self"  # Recursive relationship for nested replies
+    replied_to = NestedRepliedMessageSerializer(read_only=True)
 
     class Meta:
         model = Message
@@ -167,6 +205,7 @@ class SendMessageEventPayloadSerializer(serializers.ModelSerializer):
             "message_type",
             "created_at",
             "replied_to",
+            "replied_message_snapshot",
             "status",
             "is_pinned",
             "is_deleted_for_everyone",
