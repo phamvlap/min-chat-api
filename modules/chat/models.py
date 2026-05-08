@@ -234,6 +234,11 @@ class MessageVisibility(BaseModel):
     is_hidden = models.BooleanField(default=False)
     hidden_at = models.DateTimeField(null=True, blank=True, default=None)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "deleted_at", "is_hidden"]),
+        ]
+
 
 class MessageReaction(BaseModel):
     class ReactionTypes(models.TextChoices):

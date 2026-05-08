@@ -25,6 +25,7 @@ from base.exceptions import (
     MessageFromSystemCannotBeDeletedException,
     MessageNotFoundException,
 )
+from base.pagination import StandardCursorPagination
 from base.permission import IsUser
 from base.views import (
     BaseCreateAPIView,
@@ -216,6 +217,7 @@ class ListMessageAPIView(BaseListAPIView):
     model = Message
     serializer_class = ListMessageSerializer
     filterset_class = ListMessageFilter
+    pagination_class = StandardCursorPagination
 
     def get_queryset(self):
         user: User = cast(User, self.request.user)
