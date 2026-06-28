@@ -26,7 +26,7 @@ from base.pagination import ItemIndexPagination
 from base.tasks import health_check_task
 from modules.testing.tasks import check_health_actor_task
 
-from .permission import IsAuthenticated
+from .permissions import IsAuthenticated
 from .serializers import (
     CompleteMultipartUploadSerializer,
     CreateMultipartUploadSerializer,

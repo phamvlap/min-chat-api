@@ -1,4 +1,4 @@
-from base.permission import IsUser
+from base.permissions import IsUser
 from base.views import BaseListAPIView, BaseRetrieveAPIView
 from modules.friend.api.v1.serializers.friend import ListFriendSerializer, RetrieveFriendSerializer
 from modules.friend.models import Friend

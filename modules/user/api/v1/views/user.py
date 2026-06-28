@@ -1,6 +1,6 @@
 from django.db.models import Exists, OuterRef, Q
 
-from base.permission import IsAuthenticated
+from base.permissions import IsAuthenticated
 from base.views import BaseListAPIView
 from modules.friend.models import Friend
 from modules.friend_request.models import FriendRequest

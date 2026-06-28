@@ -26,7 +26,7 @@ from base.exceptions import (
     MessageNotFoundException,
 )
 from base.pagination import StandardCursorPagination
-from base.permission import IsUser
+from base.permissions import IsUser
 from base.views import (
     BaseCreateAPIView,
     BaseDestroyAPIView,

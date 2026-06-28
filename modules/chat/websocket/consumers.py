@@ -5,7 +5,7 @@ from asgiref.sync import async_to_sync
 
 from base.constants import WebSocket
 from base.consumers import BaseWebsocketConsumer
-from modules.chat.permisisons import IsMemberOfConversation
+from modules.chat.permissions import IsMemberOfConversation
 from utils.exceptions import extract_serializer_error
 
 from .dispatchers import CLIENT_EVENT_HANDLERS, SERVER_EVENT_HANDLERS

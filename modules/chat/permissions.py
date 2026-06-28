@@ -1,4 +1,4 @@
-from base.permission import IsWebsocketUser
+from base.permissions import IsWebsocketUser
 
 
 class IsMemberOfConversation(IsWebsocketUser):

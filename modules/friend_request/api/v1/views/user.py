@@ -1,7 +1,7 @@
 from django.db.models import Q
 
 from base.constants import ViewAction
-from base.permission import IsUser
+from base.permissions import IsUser
 from base.views import BaseCreateAPIView, BaseListAPIView, BaseUpdateAPIView
 from modules.friend_request.api.v1.serializers.friend_request import (
     AcceptOrRejectFriendRequestSerializer,

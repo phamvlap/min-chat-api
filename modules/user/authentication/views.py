@@ -1,6 +1,6 @@
 from base.constants import ViewAction
 from base.exceptions import UserNotFoundException
-from base.permission import IsAuthenticated
+from base.permissions import IsAuthenticated
 from base.views import BaseCreateAPIView, BaseRetrieveAPIView, BaseUpdateAPIView
 from modules.user.models import User
 
